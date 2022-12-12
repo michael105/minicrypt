@@ -1,0 +1,6 @@
+### Static builds for linux amd64
+
+Compiled and linked to minilib with the standard toolchain, gcc and ld,  -Os;
+
+
+```
