@@ -16,7 +16,7 @@ Ascii table dumper: ascii
 Statically linked binaries, linux 64bit, sizes: between 1kB and 5kB: [./bin](./bin) <br> 
 Part of ["minicore"](https://github.com/michael105/minicore) - Aiming for a unix system with 64kB.
 
-Since the whole bin directory is less than 15kB, I made a tarball, containing this readme,
+Since the whole bin directory is less than 20kB, I made a tarball, containing this readme,
 the binaries, and accompanying licenses. [minicrypt.tgz](./minicrypt.tgz).
 err. going to.
 
@@ -72,6 +72,8 @@ but I don't apply those terms to the binaries or sources here.
 
 References:
 
+ * https://github.com/BLAKE3-team/BLAKE3
+ * https://base91.sourceforge.net
 
 ###### ------------
 <br>

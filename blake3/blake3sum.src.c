@@ -44,7 +44,7 @@ static const uint8_t MSG_SCHEDULE[7][16] = {
     {11, 15, 5, 0, 1, 9, 8, 6, 14, 10, 2, 12, 3, 4, 7, 13},
 };
 static unsigned int highest_one(uint64_t x) {
-  return 63[00;35m ^[00m __builtin_clzll(x);
+  return 63 ^ __builtin_clzll(x);
 }
 static unsigned int popcnt(uint64_t x) {
   unsigned int count = 0;
@@ -467,13 +467,13 @@ static void store32(void *dst, uint32_t w) {
 static void g(uint32_t *state, size_t a, size_t b, size_t c, size_t d,
               uint32_t x, uint32_t y) {
   state[a] = state[a] + state[b] + x;
-  state[d] = ({ uint i = state[d][00;35m ^[00m state[a]; ROR(16,i); i; });
+  state[d] = ({ uint i = state[d] ^ state[a]; ROR(16,i); i; });
   state[c] = state[c] + state[d];
-  state[b] = ({ uint i = state[b][00;35m ^[00m state[c]; ROR(12,i); i; });
+  state[b] = ({ uint i = state[b] ^ state[c]; ROR(12,i); i; });
   state[a] = state[a] + state[b] + y;
-  state[d] = ({ uint i = state[d][00;35m ^[00m state[a]; ROR(8,i); i; });
+  state[d] = ({ uint i = state[d] ^ state[a]; ROR(8,i); i; });
   state[c] = state[c] + state[d];
-  state[b] = ({ uint i = state[b][00;35m ^[00m state[c]; ROR(7,i); i; });
+  state[b] = ({ uint i = state[b] ^ state[c]; ROR(7,i); i; });
 }
 static void round_fn(uint32_t state[16], const uint32_t *msg, size_t round) {
   const uint8_t *schedule = MSG_SCHEDULE[round];
@@ -509,7 +509,7 @@ void blake3_compress_in_place(uint32_t cv[8],
   uint32_t state[16];
   compress_pre(state, cv, block, block_len, counter, flags);
   for ( int a = 0; a<4; a++ )
-    *((ulong*)cv+a) = *((ulong*)state+a)[00;35m ^[00m *((ulong*)state+a+4);
+    *((ulong*)cv+a) = *((ulong*)state+a) ^ *((ulong*)state+a+4);
 }
 void blake3_compress_xof(const uint32_t cv[8],
                                   const uint8_t block[64],
@@ -518,8 +518,8 @@ void blake3_compress_xof(const uint32_t cv[8],
   uint32_t state[16];
   compress_pre(state, cv, block, block_len, counter, flags);
   for ( int a = 0; a<8; a++ ){
-   store32(&out[a*4], state[a][00;35m ^[00m state[a+8] );
-   store32(&out[(a+8)*4], state[a][00;35m ^[00m cv[a] );
+   store32(&out[a*4], state[a] ^ state[a+8] );
+   store32(&out[(a+8)*4], state[a] ^ cv[a] );
   }
 }
 static void hash_one(const uint8_t *input, size_t blocks,
@@ -1213,6 +1213,9 @@ static void* memcpy8( void*d, const void *s, ml_size_t n );
 static inline void bzero(void *s, int n);
 static inline void bzero8(void *s, int n);
 static inline void *memset( void *s, int c, ml_size_t n);
+typedef __builtin_va_list __gnuc_va_list;
+typedef __gnuc_va_list va_list;
+       
 void __attribute__((naked,noreturn))_start(){
 __asm__ volatile("#.global _start\n#_start:\n xorl %ebp, %ebp\n	popq %rdi\n	movq %rsp,%rsi\n	movq %rdi,%rax\n	leaq  8(%rsi,%rdi,8),%rdx\n"
  "call main\n"
@@ -1336,7 +1339,7 @@ static const uint8_t MSG_SCHEDULE[7][16] = {
     {11, 15, 5, 0, 1, 9, 8, 6, 14, 10, 2, 12, 3, 4, 7, 13},
 };
 static unsigned int highest_one(uint64_t x) {
-  return 63[00;35m ^[00m __builtin_clzll(x);
+  return 63 ^ __builtin_clzll(x);
 }
 static unsigned int popcnt(uint64_t x) {
   unsigned int count = 0;
@@ -1759,13 +1762,13 @@ static void store32(void *dst, uint32_t w) {
 static void g(uint32_t *state, long a, long b, long c, long d,
               uint32_t x, uint32_t y) {
   state[a] = state[a] + state[b] + x;
-  state[d] = ({ uint i = state[d][00;35m ^[00m state[a]; asm("ror $""16"",%0" : "+r"(i) ); i; });
+  state[d] = ({ uint i = state[d] ^ state[a]; asm("ror $""16"",%0" : "+r"(i) ); i; });
   state[c] = state[c] + state[d];
-  state[b] = ({ uint i = state[b][00;35m ^[00m state[c]; asm("ror $""12"",%0" : "+r"(i) ); i; });
+  state[b] = ({ uint i = state[b] ^ state[c]; asm("ror $""12"",%0" : "+r"(i) ); i; });
   state[a] = state[a] + state[b] + y;
-  state[d] = ({ uint i = state[d][00;35m ^[00m state[a]; asm("ror $""8"",%0" : "+r"(i) ); i; });
+  state[d] = ({ uint i = state[d] ^ state[a]; asm("ror $""8"",%0" : "+r"(i) ); i; });
   state[c] = state[c] + state[d];
-  state[b] = ({ uint i = state[b][00;35m ^[00m state[c]; asm("ror $""7"",%0" : "+r"(i) ); i; });
+  state[b] = ({ uint i = state[b] ^ state[c]; asm("ror $""7"",%0" : "+r"(i) ); i; });
 }
 static void round_fn(uint32_t state[16], const uint32_t *msg, long round) {
   const uint8_t *schedule = MSG_SCHEDULE[round];
@@ -1801,7 +1804,7 @@ void blake3_compress_in_place(uint32_t cv[8],
   uint32_t state[16];
   compress_pre(state, cv, block, block_len, counter, flags);
   for ( int a = 0; a<4; a++ )
-    *((ulong*)cv+a) = *((ulong*)state+a)[00;35m ^[00m *((ulong*)state+a+4);
+    *((ulong*)cv+a) = *((ulong*)state+a) ^ *((ulong*)state+a+4);
 }
 void blake3_compress_xof(const uint32_t cv[8],
                                   const uint8_t block[64],
@@ -1810,8 +1813,8 @@ void blake3_compress_xof(const uint32_t cv[8],
   uint32_t state[16];
   compress_pre(state, cv, block, block_len, counter, flags);
   for ( int a = 0; a<8; a++ ){
-   store32(&out[a*4], state[a][00;35m ^[00m state[a+8] );
-   store32(&out[(a+8)*4], state[a][00;35m ^[00m cv[a] );
+   store32(&out[a*4], state[a] ^ state[a+8] );
+   store32(&out[(a+8)*4], state[a] ^ cv[a] );
   }
 }
 static void hash_one(const uint8_t *input, long blocks,
@@ -1873,4 +1876,3 @@ int main(int argc, char *argv[]){
  write(1,buf,(blen*2+1));
  exit(0);
 }
-
