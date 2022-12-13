@@ -57,6 +57,7 @@ The following licenses apply to the unmodified implementations.
 
 * md6: MIT
 * blake3: CC0, or alternatively Apache License 2.0
+* blake2: CC0, Apache 2.0, or Openssl
 * sha512: BSD 2-clause
 * base91: BSD 3-clause
 
@@ -73,6 +74,7 @@ but I don't apply those terms to the binaries or sources here.
 References:
 
  * https://github.com/BLAKE3-team/BLAKE3
+ * https://blake2.net
  * https://base91.sourceforge.net
 
 
