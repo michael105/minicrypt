@@ -239,11 +239,6 @@ be64dec_vect(uint64_t *dst, const unsigned char *src, size_t len)
     W[i + ii + 16] =   \
         s1(W[i + ii + 14]) + W[i + ii + 9] + s0(W[i + ii + 1]) + W[i + ii]
 
-static void
-SHA512_Transform(uint64_t *state, const uint8_t block[128], uint64_t W[80],
-                 uint64_t S[8])
-{
-
 static const uint64_t Krnd[80] = {
     0x428a2f98d728ae22ULL, 0x7137449123ef65cdULL, 0xb5c0fbcfec4d3b2fULL,
     0xe9b5dba58189dbbcULL, 0x3956c25bf348b538ULL, 0x59f111f1b605d019ULL,
@@ -274,13 +269,16 @@ static const uint64_t Krnd[80] = {
     0x5fcb6fab3ad6faecULL, 0x6c44198c4a475817ULL
 };
 
-
+static void
+SHA512_Transform(uint64_t *state, const uint8_t block[128], uint64_t W[80],
+                 uint64_t S[8])
+{
     int i;
 
     be64dec_vect(W, block, 128);
     memcpy(S, state, 64);
     for (i = 0; i < 80; i += 16) {
-    /*    RNDr(S, W, 0, i);
+        RNDr(S, W, 0, i);
         RNDr(S, W, 1, i);
         RNDr(S, W, 2, i);
         RNDr(S, W, 3, i);
@@ -295,14 +293,11 @@ static const uint64_t Krnd[80] = {
         RNDr(S, W, 12, i);
         RNDr(S, W, 13, i);
         RNDr(S, W, 14, i);
-        RNDr(S, W, 15, i); */
-     for ( int a=0; a<16; a++ ){
-		  RNDr(S, W, a, i); 
-	  }
+        RNDr(S, W, 15, i);
         if (i == 64) {
             break;
         }
-      /*  MSCH(W, 0, i);
+        MSCH(W, 0, i);
         MSCH(W, 1, i);
         MSCH(W, 2, i);
         MSCH(W, 3, i);
@@ -317,16 +312,13 @@ static const uint64_t Krnd[80] = {
         MSCH(W, 12, i);
         MSCH(W, 13, i);
         MSCH(W, 14, i);
-        MSCH(W, 15, i); */
-     for ( int a=0; a<16; a++ ){
-        MSCH(W, a, i);
-	  }
+        MSCH(W, 15, i);
     }
     for (i = 0; i < 8; i++) {
         state[i] += S[i];
     }
 }
-/*
+
 static const uint8_t PAD[128] = {
     0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0,    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -334,7 +326,7 @@ static const uint8_t PAD[128] = {
     0,    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0,    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0,    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-};*/
+};
 
 static void
 SHA512_Pad(crypto_hash_sha512_state *state, uint64_t tmp64[80 + 8])
@@ -343,24 +335,16 @@ SHA512_Pad(crypto_hash_sha512_state *state, uint64_t tmp64[80 + 8])
     unsigned int i;
 
     r = (unsigned int) ((state->count[1] >> 3) & 0x7f);
-	 bzero(state->buf+r,112 -r);
-	 state->buf[r] = 0x80;
-	// for (i = 1; i < 112 - r; i++) 
-	//	 state->buf[r + i] = 0;
-
-
-    //if (r < 112) {
-      /*  for (i = 0; i < 112 - r; i++) {
+    if (r < 112) {
+        for (i = 0; i < 112 - r; i++) {
             state->buf[r + i] = PAD[i];
-        }*/
-    //} else {
-    if (r > 111) {
-        //for (i = 0; i < 128 - r; i++) {
-        //    state->buf[r + i] = PAD[i];
-        //}
+        }
+    } else {
+        for (i = 0; i < 128 - r; i++) {
+            state->buf[r + i] = PAD[i];
+        }
         SHA512_Transform(state->state, state->buf, &tmp64[0], &tmp64[80]);
-        //memset(&state->buf[0], 0, 112);
-        bzero8(&state->buf[0], 112<<3);
+        memset(&state->buf[0], 0, 112);
     }
     be64enc_vect(&state->buf[112], state->count, 16);
     SHA512_Transform(state->state, state->buf, &tmp64[0], &tmp64[80]);
@@ -404,10 +388,9 @@ crypto_hash_sha512_update(crypto_hash_sha512_state *state,
     /* LCOV_EXCL_STOP */
     state->count[0] += bitlen[0];
     if (inlen < 128 - r) {
-        //for (i = 0; i < inlen; i++) {
-        //    state->buf[r + i] = in[i];
-        //}
-		  memcpy( state->buf+r,in,inlen );
+        for (i = 0; i < inlen; i++) {
+            state->buf[r + i] = in[i];
+        }
         return 0;
     }
     for (i = 0; i < 128 - r; i++) {
@@ -426,7 +409,7 @@ crypto_hash_sha512_update(crypto_hash_sha512_state *state,
     for (i = 0; i < inlen; i++) {
         state->buf[i] = in[i];
     }
-   // sodium_memzero((void *) tmp64, sizeof tmp64);
+    sodium_memzero((void *) tmp64, sizeof tmp64);
 
     return 0;
 }
