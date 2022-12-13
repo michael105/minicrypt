@@ -297,7 +297,7 @@ SHA512_Transform(uint64_t *state, const uint8_t block[128], uint64_t W[80],
         if (i == 64) {
             break;
         }
-        MSCH(W, 0, i);
+      /*  MSCH(W, 0, i);
         MSCH(W, 1, i);
         MSCH(W, 2, i);
         MSCH(W, 3, i);
@@ -312,7 +312,10 @@ SHA512_Transform(uint64_t *state, const uint8_t block[128], uint64_t W[80],
         MSCH(W, 12, i);
         MSCH(W, 13, i);
         MSCH(W, 14, i);
-        MSCH(W, 15, i);
+        MSCH(W, 15, i); */
+     for ( int a=0; a<16; a++ ){
+        MSCH(W, a, i);
+	  }
     }
     for (i = 0; i < 8; i++) {
         state[i] += S[i];
@@ -335,14 +338,21 @@ SHA512_Pad(crypto_hash_sha512_state *state, uint64_t tmp64[80 + 8])
     unsigned int i;
 
     r = (unsigned int) ((state->count[1] >> 3) & 0x7f);
-    if (r < 112) {
-        for (i = 0; i < 112 - r; i++) {
+	 bzero(state->buf+r,112 -r);
+	 state->buf[r] = 0x80;
+	// for (i = 1; i < 112 - r; i++) 
+	//	 state->buf[r + i] = 0;
+
+
+    //if (r < 112) {
+      /*  for (i = 0; i < 112 - r; i++) {
             state->buf[r + i] = PAD[i];
-        }
-    } else {
-        for (i = 0; i < 128 - r; i++) {
-            state->buf[r + i] = PAD[i];
-        }
+        }*/
+    //} else {
+    if (r > 111) {
+        //for (i = 0; i < 128 - r; i++) {
+        //    state->buf[r + i] = PAD[i];
+        //}
         SHA512_Transform(state->state, state->buf, &tmp64[0], &tmp64[80]);
         memset(&state->buf[0], 0, 112);
     }
