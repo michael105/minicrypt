@@ -1,3 +1,15 @@
+original readme.
+
+Source: github.com/camerondm9/blake2s-micro
+
+I modified the sources a bit, to spare some more space.
+
+But wasn't that successful. It's been already wonderful squeezed.
+
+(misc)
+
+
+
 # BLAKE2s for embedded devices
 
 This is a size-optimized implementation of the [BLAKE2s hash function](https://blake2.net/).
