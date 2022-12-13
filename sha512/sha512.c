@@ -278,7 +278,7 @@ SHA512_Transform(uint64_t *state, const uint8_t block[128], uint64_t W[80],
     be64dec_vect(W, block, 128);
     memcpy(S, state, 64);
     for (i = 0; i < 80; i += 16) {
-        RNDr(S, W, 0, i);
+    /*    RNDr(S, W, 0, i);
         RNDr(S, W, 1, i);
         RNDr(S, W, 2, i);
         RNDr(S, W, 3, i);
@@ -293,7 +293,10 @@ SHA512_Transform(uint64_t *state, const uint8_t block[128], uint64_t W[80],
         RNDr(S, W, 12, i);
         RNDr(S, W, 13, i);
         RNDr(S, W, 14, i);
-        RNDr(S, W, 15, i);
+        RNDr(S, W, 15, i); */
+     for ( int a=0; a<16; a++ ){
+		  RNDr(S, W, a, i); 
+	  }
         if (i == 64) {
             break;
         }
@@ -354,7 +357,8 @@ SHA512_Pad(crypto_hash_sha512_state *state, uint64_t tmp64[80 + 8])
         //    state->buf[r + i] = PAD[i];
         //}
         SHA512_Transform(state->state, state->buf, &tmp64[0], &tmp64[80]);
-        memset(&state->buf[0], 0, 112);
+        //memset(&state->buf[0], 0, 112);
+        bzero8(&state->buf[0], 112<<3);
     }
     be64enc_vect(&state->buf[112], state->count, 16);
     SHA512_Transform(state->state, state->buf, &tmp64[0], &tmp64[80]);
@@ -401,6 +405,7 @@ crypto_hash_sha512_update(crypto_hash_sha512_state *state,
         for (i = 0; i < inlen; i++) {
             state->buf[r + i] = in[i];
         }
+		  //memcpy( state->buf+r,in,inlen );
         return 0;
     }
     for (i = 0; i < 128 - r; i++) {
