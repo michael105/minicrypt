@@ -405,7 +405,7 @@ crypto_hash_sha512_update(crypto_hash_sha512_state *state,
         for (i = 0; i < inlen; i++) {
             state->buf[r + i] = in[i];
         }
-		  //memcpy( state->buf+r,in,inlen );
+		  //memcpy( &state->buf[r],in,inlen );
         return 0;
     }
     for (i = 0; i < 128 - r; i++) {

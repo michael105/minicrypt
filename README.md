@@ -3,7 +3,7 @@
 ###### ------------
 <br>
 Cryptographic hashes:
-blake3, sha512, md6.
+blake3, blake2s, sha512, md6.
 
 Base encodings:
 base91, base32
