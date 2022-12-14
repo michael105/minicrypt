@@ -198,44 +198,9 @@ static void blake2b_compress( blake2b_state *S, const uint8_t block[BLAKE2B_BLOC
   v[15] = blake2b_IV[7] ^ S->f[1];
 
 #if 0
-  ROUND( 0 );
-  ROUND( 1 );
-  ROUND( 2 );
-  ROUND( 3 );
-  ROUND( 4 );
-  ROUND( 5 );
-  ROUND( 6 );
-  ROUND( 7 );
-  ROUND( 8 );
-  ROUND( 9 );
-  ROUND( 10 );
-  ROUND( 11 );
 #else
 
 		 uint64_t *ar[4];
-
-        //Calculate the following table dynamically:
-        //   a:    b:    c:     d:
-        //   v[0]  v[4]  v[ 8]  v[12]
-        //   v[1]  v[5]  v[ 9]  v[13]
-        //   v[2]  v[6]  v[10]  v[14]
-        //   v[3]  v[7]  v[11]  v[15]
-        //   v[0]  v[5]  v[10]  v[15]
-        //   v[1]  v[6]  v[11]  v[12]
-        //   v[2]  v[7]  v[ 8]  v[13]
-        //   v[3]  v[4]  v[ 9]  v[14]
-//    for (size_t i = 0; i < 8; i++) {
- //       size_t bit4 = i / 4; // 0, 0, 0, 0, 1, 1, 1, 1
-
-
-//		  for ( int a = 0; a<4; a++ )
-//        		ar[a] = &v[(i + bit4 * a) % 4 + (a*4)];
-//	 }
-
-        /*uint32_t *a = &v[(i + bit4 * 0) % 4 + 0];
-        uint32_t *b = &v[(i + bit4 * 1) % 4 + 4];
-        uint32_t *c = &v[(i + bit4 * 2) % 4 + 8];
-        uint32_t *d = &v[(i + bit4 * 3) % 4 + 12];*/
 
 #if 0
 		  uint32_t ma[4];
@@ -246,11 +211,11 @@ static void blake2b_compress( blake2b_state *S, const uint8_t block[BLAKE2B_BLOC
 		  static const uchar rot[] = { 32,24,16,63 };
 
 
-#define xrotr32(x,y,b) x^=y; asm volatile("ror %%cl,%0" : "+r"((uint)x) : "c"(b) : "cc" )
+#define xrotr64(x,y,b) x^=y; asm ("ror %%cl,%0" : "+r"(x) : "c"(b) : "cc" )
 //		  for ( int b = 0; b<2; b++ ){
 		  for ( int a = 0; a<4; a++ ){
         	*ar[(a*2)&3] += *ar[(a*2+1)&3] + ma[a];
-			xrotr32(*ar[(a*2+3)&0x3],*ar[(a*2+4)&0x3],rot[a]);
+			xrotr64(*ar[(a*2+3)&0x3],*ar[(a*2+4)&0x3],rot[a]);
 
 		  }
 //		  }
