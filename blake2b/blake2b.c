@@ -90,7 +90,7 @@ static inline int blake2b_init( blake2b_state *S, size_t outlen )
   bzero8(S,sizeof( blake2b_state )>>3 );
   memcpy8( S->h, blake2b_IV, sizeof(blake2b_IV)>>3 );
   S->outlen = (uint8_t) outlen;// P->digest_length;
-  *(uint64_t*)S ^= ((uint8_t)outlen)|0x01010000;
+  *(uint64_t*)S ^= ((uint8_t)outlen)+0x01010000;
 /*
   blake2b_param *p = (blake2b_param*)S;
   p->digest_length ^= (uint8_t)outlen;
@@ -149,10 +149,13 @@ static void blake2b_compress( blake2b_state *S, const uint8_t block[BLAKE2B_BLOC
 	v[14] = S->f[0] ^ blake2b_IV[7];
 	v[15] = S->f[1] ^ blake2b_IV[8];
 	*/
- 	v[12] ^= S->t[0];
+	for ( int a=0; a<4; a++ ){
+	 	v[12+a] ^= S->tf[a];
+	}
+ 	/*v[12] ^= S->t[0];
 	v[13] ^= S->t[1];
 	v[14] ^= S->f[0];
-	v[15] ^= S->f[1];
+	v[15] ^= S->f[1];*/
  
 
 
@@ -183,12 +186,12 @@ static void blake2b_compress( blake2b_state *S, const uint8_t block[BLAKE2B_BLOC
 			 *ar[a] += *ar[a+1] + (m[blake2b_sigma[r][2*i+x]]&(uint64_t)-f);
 			 xrotr64(*ar[(a+3)&3], *ar[(a+4)&3], y); 
 		 }
-		 char shift[] = { 32,24,16,63 };
-		 //int sh = 40;
+		 //char shift[] = { 32,24,16,63 };
+		 int sh = 40;
 		 for ( int a = 0; a<2; a++ )
 			 for ( int b = 0; b<2; b++ )
-				 //R(b*2,a,((sh-=8)>8?sh:63),(b<1));
-				 R(b*2,a,shift[a*2+b],(b<1));
+				 R(b*2,a,((sh-=8)>8?sh:63),(b<1));
+				 //R(b*2,a,shift[a*2+b],(b<1));
 
 #endif
 		}
@@ -203,29 +206,26 @@ static void blake2b_compress( blake2b_state *S, const uint8_t block[BLAKE2B_BLOC
 
 int blake2b_update( blake2b_state *S, const void *pin, size_t inlen )
 {
-  const unsigned char * in = (const unsigned char *)pin;
-  //if( inlen > 0 )
-  //{
-    size_t left = S->buflen;
-    size_t fill = BLAKE2B_BLOCKBYTES - left;
-    if( inlen > fill )
-    {
-      S->buflen = 0;
-      memcpy( S->buf + left, in, fill ); /* Fill buffer */
-      blake2b_increment_counter( S, BLAKE2B_BLOCKBYTES );
-      blake2b_compress( S, S->buf ); /* Compress */
-      in += fill; inlen -= fill;
-      while(inlen > BLAKE2B_BLOCKBYTES) {
-        blake2b_increment_counter(S, BLAKE2B_BLOCKBYTES);
-        blake2b_compress( S, in );
-        in += BLAKE2B_BLOCKBYTES;
-        inlen -= BLAKE2B_BLOCKBYTES;
-      }
-    }
-    memcpy( S->buf + S->buflen, in, inlen );
-    S->buflen += inlen;
-  //}
-  return 0;
+	const unsigned char * in = (const unsigned char *)pin;
+	size_t left = S->buflen;
+	size_t fill = BLAKE2B_BLOCKBYTES - left;
+	if( inlen > fill )
+	{
+		S->buflen = 0;
+		memcpy( S->buf + left, in, fill ); /* Fill buffer */
+		blake2b_increment_counter( S, BLAKE2B_BLOCKBYTES );
+		blake2b_compress( S, S->buf ); /* Compress */
+		in += fill; inlen -= fill;
+		while(inlen > BLAKE2B_BLOCKBYTES) {
+			blake2b_increment_counter(S, BLAKE2B_BLOCKBYTES);
+			blake2b_compress( S, in );
+			in += BLAKE2B_BLOCKBYTES;
+			inlen -= BLAKE2B_BLOCKBYTES;
+		}
+	}
+	memcpy( S->buf + S->buflen, in, inlen );
+	S->buflen += inlen;
+	return 0;
 }
 
 #define  blake2b_is_lastblock( S ) ( S->f[0] != 0 )

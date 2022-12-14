@@ -59,10 +59,15 @@ extern "C" {
 
   typedef struct blake2b_state__
   {
-    uint64_t h[8];
-    uint64_t t[2];
-    uint64_t f[2];
-    uint8_t  buf[BLAKE2B_BLOCKBYTES];
+	  uint64_t h[8];
+	  union {
+		  uint64_t tf[4];
+		  struct {    
+			  uint64_t t[2];
+			  uint64_t f[2];
+		  }; };
+
+	  uint8_t  buf[BLAKE2B_BLOCKBYTES];
     size_t   buflen;
     size_t   outlen;
     uint8_t  last_node;
