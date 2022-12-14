@@ -72,7 +72,8 @@ static void blake2b_increment_counter( blake2b_state *S, const uint64_t inc )
 static void blake2b_init0( blake2b_state *S )
 {
   size_t i;
-  memset( S, 0, sizeof( blake2b_state ) );
+  //memset( S, 0, sizeof( blake2b_state ) );
+  bzero8(S,sizeof( blake2b_state )>>3 );
 
   for( i = 0; i < 8; ++i ) S->h[i] = blake2b_IV[i];
 }
@@ -100,7 +101,7 @@ int blake2b_init( blake2b_state *S, size_t outlen )
   blake2b_param P[1];
 
   if ( ( !outlen ) || ( outlen > BLAKE2B_OUTBYTES ) ) return -1;
-
+/*
   P->digest_length = (uint8_t)outlen;
   P->key_length    = 0;
   P->fanout        = 1;
@@ -112,11 +113,20 @@ int blake2b_init( blake2b_state *S, size_t outlen )
   P->inner_length  = 0;
   memset( P->reserved, 0, sizeof( P->reserved ) );
   memset( P->salt,     0, sizeof( P->salt ) );
-  memset( P->personal, 0, sizeof( P->personal ) );
+  memset( P->personal, 0, sizeof( P->personal ) ); */
+
+  bzero8( P, sizeof(P)>>3 );
+
+  P->digest_length = (uint8_t)outlen;
+  P->fanout        = 1;
+  P->depth         = 1;
+
+
+
   return blake2b_init_param( S, P );
 }
 
-
+#ifdef KEYED
 int blake2b_init_key( blake2b_state *S, size_t outlen, const void *key, size_t keylen )
 {
   blake2b_param P[1];
@@ -149,53 +159,27 @@ int blake2b_init_key( blake2b_state *S, size_t outlen, const void *key, size_t k
   }
   return 0;
 }
-
-#define G(r,i,a,b,c,d)                      \
-  do {                                      \
-    a = a + b + m[blake2b_sigma[r][2*i+0]]; \
-    d = rotr64(d ^ a, 32);                  \
-    c = c + d;                              \
-    b = rotr64(b ^ c, 24);                  \
-    a = a + b + m[blake2b_sigma[r][2*i+1]]; \
-    d = rotr64(d ^ a, 16);                  \
-    c = c + d;                              \
-    b = rotr64(b ^ c, 63);                  \
-  } while(0)
-
-#define ROUND(r)                    \
-  do {                              \
-    G(r,0,v[ 0],v[ 4],v[ 8],v[12]); \
-    G(r,1,v[ 1],v[ 5],v[ 9],v[13]); \
-    G(r,2,v[ 2],v[ 6],v[10],v[14]); \
-    G(r,3,v[ 3],v[ 7],v[11],v[15]); \
-    G(r,4,v[ 0],v[ 5],v[10],v[15]); \
-    G(r,5,v[ 1],v[ 6],v[11],v[12]); \
-    G(r,6,v[ 2],v[ 7],v[ 8],v[13]); \
-    G(r,7,v[ 3],v[ 4],v[ 9],v[14]); \
-  } while(0)
+#endif
 
 static void blake2b_compress( blake2b_state *S, const uint8_t block[BLAKE2B_BLOCKBYTES] )
 {
-  uint64_t m[16];
-  uint64_t v[16];
-  size_t i;
+	uint64_t m[16];
+	uint64_t v[16];
+	size_t i;
 
-  for( i = 0; i < 16; ++i ) {
-    m[i] = load64( block + i * sizeof( m[i] ) );
-  }
+	for( i = 0; i < 16; ++i ) {
+		m[i] = load64( block + i * sizeof( m[i] ) );
+	}
 
-  for( i = 0; i < 8; ++i ) {
-    v[i] = S->h[i];
-  }
-
-  v[ 8] = blake2b_IV[0];
-  v[ 9] = blake2b_IV[1];
-  v[10] = blake2b_IV[2];
-  v[11] = blake2b_IV[3];
-  v[12] = blake2b_IV[4] ^ S->t[0];
-  v[13] = blake2b_IV[5] ^ S->t[1];
-  v[14] = blake2b_IV[6] ^ S->f[0];
-  v[15] = blake2b_IV[7] ^ S->f[1];
+	for( i = 0; i < 8; ++i ) {
+		v[i] = S->h[i];
+		v[i+8] = blake2b_IV[i];
+	}
+  v[12] ^= S->t[0];
+  v[13] ^= S->t[1];
+  v[14] ^= S->f[0];
+  v[15] ^= S->f[1];
+ 
 
 #if 0
 #else
