@@ -5,6 +5,7 @@ COMPILE memcpy8 nread bzero8 bzero memcpy memset
 SHRINKELF
 #STRIPFLAG
 #FULLDEBUG
+OPTFLAG -Os
 
 SEGMENTS text
 NODEFAULTS
@@ -54,8 +55,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "blake2b.c"
 
 
-#define BUFL 4000
+#define BUFL (1<<18)
 
+asm (".global dummy\ndummy:\nret\n");
 
 MAIN{
 
