@@ -4,7 +4,6 @@ COMPILE memcpy8 nread bzero8 bzero memcpy memset
 
 SHRINKELF
 #STRIPFLAG
-#FULLDEBUG
 OPTFLAG -Os
 
 SEGMENTS text

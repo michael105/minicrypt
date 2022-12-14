@@ -44,28 +44,10 @@ static const uint8_t blake2b_sigma[12][16] =
   { 14, 10,  4,  8,  9, 15, 13,  6,  1, 12,  0,  2, 11,  7,  5,  3 }
 };
 
-
-static void blake2b_set_lastnode( blake2b_state *S )
-{
-  S->f[1] = (uint64_t)-1;
-}
-
-/* Some helper functions, not necessarily useful */
-static int blake2b_is_lastblock( const blake2b_state *S )
-{
-  return S->f[0] != 0;
-}
-
 static void blake2b_set_lastblock( blake2b_state *S )
 {
-  //if( S->last_node ) 
-	//  blake2b_set_lastnode( S );
-	
 	S->f[0] = ~0ULL;//(uint64_t)-1;
-	//S->f[0] ^= ~(S->f[0]);
-
 	S->f[1] |= (uint64_t)(!!(S->last_node))<<63;
-
 }
 
 static void blake2b_increment_counter( blake2b_state *S, const uint64_t inc )
@@ -77,45 +59,45 @@ static void blake2b_increment_counter( blake2b_state *S, const uint64_t inc )
 
 static void blake2b_init0( blake2b_state *S )
 {
-  size_t i;
-  //memset( S, 0, sizeof( blake2b_state ) );
   bzero8(S,sizeof( blake2b_state )>>3 );
-  memcpy8( S->h, blake2b_IV, sizeof(blake2b_IV)>>3 );
-
- // for( i = 0; i < 8; ++i ) S->h[i] = blake2b_IV[i];
+  //memcpy8( S->h, blake2b_IV, sizeof(blake2b_IV)>>3 );
 }
 
 /* init xors IV with input parameter block */
-int blake2b_init_param( blake2b_state *S, const blake2b_param *P )
+static inline void blake2b_init_param( blake2b_state *S, const blake2b_param *P )
 {
   const uint8_t *p = ( const uint8_t * )( P );
   size_t i;
 
-  blake2b_init0( S );
+  //blake2b_init0( S );
+  bzero8(S,sizeof( blake2b_state )>>3 );
 
   /* IV XOR ParamBlock */
   for( i = 0; i < 8; ++i )
-    S->h[i] ^= load64( p + sizeof( S->h[i] ) * i );
+    S->h[i] = *((uint64_t*)P + i)  ^ blake2b_IV[i];
+    //S->h[i] = load64( p + sizeof( S->h[i] ) * i ) ^ blake2b_IV[i];
 
   S->outlen = P->digest_length;
-  return 0;
 }
 
 
 
-int blake2b_init( blake2b_state *S, size_t outlen )
+static inline int blake2b_init( blake2b_state *S, size_t outlen )
 {
-  blake2b_param P[1];
-
   if ( ( !outlen ) || ( outlen > BLAKE2B_OUTBYTES ) ) return -1;
 
-  bzero8( P, sizeof(P)>>3 );
-
-  P->digest_length = (uint8_t)outlen;
-  P->fanout        = 1;
-  P->depth         = 1;
-
-  return blake2b_init_param( S, P );
+  
+  bzero8(S,sizeof( blake2b_state )>>3 );
+  memcpy8( S->h, blake2b_IV, sizeof(blake2b_IV)>>3 );
+  S->outlen = (uint8_t) outlen;// P->digest_length;
+  *(uint64_t*)S ^= ((uint8_t)outlen)|0x01010000;
+/*
+  blake2b_param *p = (blake2b_param*)S;
+  p->digest_length ^= (uint8_t)outlen;
+  p->fanout        ^= 1;
+  p->depth         ^= 1;
+*/
+  return(0);
 }
 
 #ifdef KEYED
@@ -155,58 +137,25 @@ int blake2b_init_key( blake2b_state *S, size_t outlen, const void *key, size_t k
 
 static void blake2b_compress( blake2b_state *S, const uint8_t block[BLAKE2B_BLOCKBYTES] )
 {
-	//uint64_t m[16];
 	const uint64_t* m = (uint64_t*)block;
 	uint64_t v[16];
 	size_t i;
 
-//	for( i = 0; i < 16; ++i ) {
-//		m[i] = load64( block + i * sizeof( m[i] ) );
-//	}
-
-/*	for( i = 0; i < 8; ++i ) {
-		v[i] = S->h[i];
-		v[i+8] = blake2b_IV[i];
-	}*/
-
-		memcpy8( v, S->h, 8 );
-		memcpy8( v+8, blake2b_IV, 8 );
-  v[12] ^= S->t[0];
-  v[13] ^= S->t[1];
-  v[14] ^= S->f[0];
-  v[15] ^= S->f[1];
+	memcpy8( v, S->h, 8 );
+	memcpy8( v+8, blake2b_IV, 8 );
+	/*memcpy8( v+8, blake2b_IV, 4 );
+	v[12] = S->t[0] ^ blake2b_IV[5];
+	v[13] = S->t[1] ^ blake2b_IV[6];
+	v[14] = S->f[0] ^ blake2b_IV[7];
+	v[15] = S->f[1] ^ blake2b_IV[8];
+	*/
+ 	v[12] ^= S->t[0];
+	v[13] ^= S->t[1];
+	v[14] ^= S->f[0];
+	v[15] ^= S->f[1];
  
 
-#if 0
-#else
 
-
-#if 0
-		  uint32_t ma[4];
-		  ma[0] = m[sigma>>4];
-		  ma[1] = 0;
-		  ma[2] = m[sigma&0xf];
-		  ma[3] = 0;
-		  static const uchar rot[] = { 32,24,16,63 };
-
-
-#define xrotr64(x,y,b) x^=y; asm ("ror %%cl,%0" : "+r"(x) : "c"(b) : "cc" )
-//		  for ( int b = 0; b<2; b++ ){
-		  for ( int a = 0; a<4; a++ ){
-        	*ar[(a*2)&3] += *ar[(a*2+1)&3] + ma[a];
-			xrotr64(*ar[(a*2+3)&0x3],*ar[(a*2+4)&0x3],rot[a]);
-
-		  }
-//		  }
-
-#else
-
-       //const uint8_t sigma = blake2b_sigma[i][16];
-       //uint32_t m1 = m[sigma >> 4];
-       //uint32_t m2 = m[sigma & 0xf];
-
-//#define xrotr32(x,y,b) x^=y; asm volatile("ror %%cl,%0" : "+r"((uint)x) : "c"(b) : "cc" )
-//		  static const uchar rot[] = { 16,12,8,7 };
 	for ( int r = 0; r<12; r++ ){
 		for ( int i = 0; i<8; i++ ){
 
@@ -242,39 +191,21 @@ static void blake2b_compress( blake2b_state *S, const uint8_t block[BLAKE2B_BLOC
 				 R(b*2,a,shift[a*2+b],(b<1));
 
 #endif
-
-
-		  /*
-        *ar[0] += *ar[1] + m[blake2b_sigma[r][2*i]];
-        xrotr64(*ar[3], *ar[0], 32);
-        *ar[2] += *ar[3];
-        xrotr64(*ar[1], *ar[2], 24);
-        *ar[0] += *ar[1] + m[blake2b_sigma[r][2*i+1]];
-        xrotr64(*ar[3], *ar[0], 16);
-        *ar[2] += *ar[3];
-        xrotr64(*ar[1], *ar[2], 63);
-		  */
-
-#endif
 		}
 
 	 }
-
-#endif
 
   for( i = 0; i < 8; ++i ) {
     S->h[i] ^= v[i] ^ v[i + 8];
   }
 }
 
-#undef G
-#undef ROUND
 
 int blake2b_update( blake2b_state *S, const void *pin, size_t inlen )
 {
   const unsigned char * in = (const unsigned char *)pin;
-  if( inlen > 0 )
-  {
+  //if( inlen > 0 )
+  //{
     size_t left = S->buflen;
     size_t fill = BLAKE2B_BLOCKBYTES - left;
     if( inlen > fill )
@@ -293,34 +224,22 @@ int blake2b_update( blake2b_state *S, const void *pin, size_t inlen )
     }
     memcpy( S->buf + S->buflen, in, inlen );
     S->buflen += inlen;
-  }
+  //}
   return 0;
 }
 
+#define  blake2b_is_lastblock( S ) ( S->f[0] != 0 )
+
 int blake2b_final( blake2b_state *S, void *out, size_t outlen )
 {
-//  uint8_t buffer[BLAKE2B_OUTBYTES] = {0};
-  size_t i;
-
   if( out == NULL || outlen < S->outlen || blake2b_is_lastblock(S) )
     return -1;
 
   blake2b_increment_counter( S, S->buflen );
   blake2b_set_lastblock( S );
- // memset( S->buf + S->buflen, 0, BLAKE2B_BLOCKBYTES - S->buflen ); /* Padding */
   bzero( S->buf + S->buflen, BLAKE2B_BLOCKBYTES - S->buflen ); /* Padding */
   blake2b_compress( S, S->buf );
 
-#if 0
-  for( i = 0; i < 8; ++i ) /* Output full hash to temp buffer */
-    store64( buffer + sizeof( S->h[i] ) * i, S->h[i] );
-#else
-//	memcpy8( buffer, S->h, 8 );
-#endif
-
-//  memcpy( out, buffer, S->outlen );
-  // wondering. wouldn't it be better to erase the state?
-//  secure_zero_memory(buffer, sizeof(buffer));
 	memcpy( out, S->h, S->outlen );
   return 0;
 }
