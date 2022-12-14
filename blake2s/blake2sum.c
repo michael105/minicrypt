@@ -49,6 +49,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define memset(x,y,z) bzero(x,z)
 
+#define BLAKE2S_OUTLEN    (32)  //Length of digest (32 is the secure/maximum/standard length). Setting this to zero switches the functions to expect an "outlen" parameter.
 
 #include "blake2s.c"
 

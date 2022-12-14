@@ -4,7 +4,7 @@ Source: github.com/camerondm9/blake2s-micro
 
 I modified the sources a bit, to spare some more space.
 
-But wasn't that successful. It's been already wonderful squeezed.
+But wasn't that successful. Did had been already wonderful squeezed.
 
 (misc)
 

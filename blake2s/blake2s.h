@@ -29,7 +29,6 @@ extern "C" {
 
 //Options that can be set depending on application needs.
 //Except for BLAKE2S_OUTLEN, disabling features will improve code size.
-#define BLAKE2S_OUTLEN    (32)  //Length of digest (32 is the secure/maximum/standard length). Setting this to zero switches the functions to expect an "outlen" parameter.
 #define BLAKE2S_64BIT     (0)   //Input length may be 4GB or larger
 #define BLAKE2S_KEYED     (0)   //Support for keyed hashing
 
