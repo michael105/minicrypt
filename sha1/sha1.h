@@ -16,7 +16,10 @@ extern "C" {
 typedef struct
 {
     uint32_t state[5];
-    uint32_t count[2];
+	 union {
+	    uint32_t count[2];
+		 ulong countl;
+	 };
     unsigned char buffer[64];
 } SHA1_CTX;
 
