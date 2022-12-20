@@ -34,8 +34,14 @@ A million repetitions of "a"
 /* I got the idea of expanding during the round function from SSLeay */
 #if BYTE_ORDER == LITTLE_ENDIAN
 
-#define blk0(i) (block->l[i] = (rol(block->l[i],24)&0xFF00FF00) \
+//#define blk0(i) (block->l[i] = (rol(block->l[i],24)&0xFF00FF00) \
     |(rol(block->l[i],8)&0x00FF00FF))
+
+#define blk0(i) ({ BSWAP(block->l[i]); block->l[i]; })
+
+//#define blk0(i) (block->l[i] = rol((rol(block->l[i],16)&0x00FF00FF) \
+    |(block->l[i]&0xFF00FF00),8))
+//#define blk0(i) (block->l[i] = block->l[i]
 
 #elif BYTE_ORDER == BIG_ENDIAN
 #define blk0(i) block->l[i]
@@ -45,6 +51,10 @@ A million repetitions of "a"
 
 #define blk(i) (block->l[i&15] = rol(block->l[(i+13)&15]^block->l[(i+8)&15] \
     ^block->l[(i+2)&15]^block->l[i&15],1))
+
+//#define blk(i) (rol(block->l[i&15] ^= block->l[(i+13)&15]^block->l[(i+8)&15] \
+    ^block->l[(i+2)&15] ,1) )
+
 
 #ifdef R2
 #undef R2
@@ -56,15 +66,21 @@ A million repetitions of "a"
 
 
 /* (R0+R1), R2, R3, R4 are the different operations used in SHA1 */
-#define R0(v,w,x,y,z,i) z+=((w&(x^y))^y)     +blk0(i)+0x5A827999+rol(v,5);arol();
 
-#define R1(v,w,x,y,z,i) z+=((w&(x^y))^y)      +blkf(0x5A827999);arol();
 //#define R1(v,w,x,y,z,i) z+=((w&(x^y))^y)      +blk(i)+0x5A827999+rol(v,5);w=rol(w,30);
-#define R3(v,w,x,y,z,i) z+=(((w|x)&y)|(w&x))  +blkf(0x8F1BBCDC);arol()
 //#define R3(v,w,x,y,z,i) z+=(((w|x)&y)|(w&x))  +blk(i)+0x8F1BBCDC+rol(v,5);w=rol(w,30);
 
-#define R2(v,w,x,y,z,i) z+=(w^x^y)            +blk(i)+0x6ED9EBA1+rol(v,5);w=rol(w,30);
-#define R4(v,w,x,y,z,i) z+=(w^x^y)            +blk(i)+0xCA62C1D6+rol(v,5);w=rol(w,30);
+//#define R2(v,w,x,y,z,i) z+=(w^x^y)            +blk(i)+0x6ED9EBA1+rol(v,5);w=rol(w,30);
+//#define R4(v,w,x,y,z,i) z+=(w^x^y)            +blk(i)+0xCA62C1D6+rol(v,5);w=rol(w,30);
+
+#define R0(v,w,x,y,z,i) z+=((w&(x^y))^y)     +blk0(i)+0x5A827999+rol(v,5);arol();
+
+#define R1(v,w,x,y,z,i) z+=((w&(x^y))^y)      +blkf(0x5A827999);//arol();
+
+#define R3(v,w,x,y,z,i) z+=(((w|x)&y)|(w&x))  +blkf(0x8F1BBCDC);//arol()
+
+#define R2(v,w,x,y,z,i) z+=(w^x^y)            +blkf(0x6ED9EBA1);//arol();
+#define R4(v,w,x,y,z,i) z+=(w^x^y)            +blkf(0xCA62C1D6);//arol();
 
 
 /* Hash a single 512-bit block. This is the core of the algorithm. */
@@ -120,18 +136,30 @@ void SHA1Transform(
 	 uint i = 0;
 
 
-	 uint blkf(const uint ic){
-			return( blk(i)+ic+rol(ar[(i+4)%5],5) );
-	 }
 	
 	 void arol(){
 				ar[(i+3)%5]=rol(ar[(i+3)%5],30);
 				//ROL(30,ar[(i+3)%5]);
 	 }
 
-	void r24f(const uint ic){
-			ar[i%5]+=(ar[(i+3)%5]^ar[(i+2)%5]^ar[(i+1)%5]) + blkf(ic);
+//#define blk(i) (block->l[i&15] = rol(block->l[(i+13)&15]^block->l[(i+8)&15] \
+    ^block->l[(i+2)&15]^block->l[i&15],1))
+
+	 uint blkf(const uint ic){
 			arol();
+			return( blk(i)+ic+rol(ar[(i+4)%5],5) );
+	 }
+
+
+	
+	void r3f(){
+		ar[i%5] += (((ar[(i+3)%5]|ar[(i+2)%5])&ar[(i+1)%5])|(ar[(i+3)%5]&(ar[(i+2)%5]))) 
+			+ blkf(0x8f1bbcdc);
+	}
+
+	void r24f(const uint ic){
+			ar[i%5]+=(ar[(i+3)%5]^ar[(i+2)%5]^ar[(i+1)%5]) 
+				+ blkf(ic);
 	}
 
 
@@ -207,7 +235,8 @@ void SHA1Transform(
 #endif
 #if 1
 	 for ( ; i<60; i++ ){
-		 R3(ar[(i+4)%5],ar[(i+3)%5],ar[(i+2)%5],ar[(i+1)%5],ar[i%5],i);
+		 //R3(ar[(i+4)%5],ar[(i+3)%5],ar[(i+2)%5],ar[(i+1)%5],ar[i%5],i);
+		 r3f();
 	 }
 #else
     R3(a, b, c, d, e, 40);
