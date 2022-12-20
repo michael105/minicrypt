@@ -69,7 +69,7 @@ MAIN{
 	blake2b_init(&ctx,64);
 
 
-	while ( (r=nread(0,(char*)buf,BUFL)) ){
+	while ( (r=nread(0,(char*)buf,BUFL))>0 ){
 		blake2b_update(&ctx,buf,r);
 	}
 

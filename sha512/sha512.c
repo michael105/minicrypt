@@ -277,54 +277,22 @@ SHA512_Transform(uint64_t *state, const uint8_t block[128], uint64_t W[80],
 
     be64dec_vect(W, block, 128);
     memcpy(S, state, 64);
-    for (i = 0; i < 80; i += 16) {
-    /*    RNDr(S, W, 0, i);
-        RNDr(S, W, 1, i);
-        RNDr(S, W, 2, i);
-        RNDr(S, W, 3, i);
-        RNDr(S, W, 4, i);
-        RNDr(S, W, 5, i);
-        RNDr(S, W, 6, i);
-        RNDr(S, W, 7, i);
-        RNDr(S, W, 8, i);
-        RNDr(S, W, 9, i);
-        RNDr(S, W, 10, i);
-        RNDr(S, W, 11, i);
-        RNDr(S, W, 12, i);
-        RNDr(S, W, 13, i);
-        RNDr(S, W, 14, i);
-        RNDr(S, W, 15, i); */
-     for ( int a=0; a<16; a++ ){
-		  RNDr(S, W, a, i); 
-	  }
-        if (i == 64) {
-            break;
-        }
-      /*  MSCH(W, 0, i);
-        MSCH(W, 1, i);
-        MSCH(W, 2, i);
-        MSCH(W, 3, i);
-        MSCH(W, 4, i);
-        MSCH(W, 5, i);
-        MSCH(W, 6, i);
-        MSCH(W, 7, i);
-        MSCH(W, 8, i);
-        MSCH(W, 9, i);
-        MSCH(W, 10, i);
-        MSCH(W, 11, i);
-        MSCH(W, 12, i);
-        MSCH(W, 13, i);
-        MSCH(W, 14, i);
-        MSCH(W, 15, i); */
-     for ( int a=0; a<16; a++ ){
-        MSCH(W, a, i);
-	  }
-    }
-    for (i = 0; i < 8; i++) {
-        state[i] += S[i];
-    }
+	 for (i = 0; i < 80; i += 16) {
+		 for ( int a=0; a<16; a++ ){
+			 RNDr(S, W, a, i); 
+		 }
+		 if (i == 64) {
+			 break;
+		 }
+		 for ( int a=0; a<16; a++ ){
+			 MSCH(W, a, i);
+		 }
+	 }
+	 for (i = 0; i < 8; i++) {
+		 state[i] += S[i];
+	 }
 }
-
+/*
 static const uint8_t PAD[128] = {
     0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0,    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -333,7 +301,7 @@ static const uint8_t PAD[128] = {
     0,    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0,    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
-
+*/
 static void
 SHA512_Pad(crypto_hash_sha512_state *state, uint64_t tmp64[80 + 8])
 {
@@ -405,7 +373,7 @@ crypto_hash_sha512_update(crypto_hash_sha512_state *state,
         for (i = 0; i < inlen; i++) {
             state->buf[r + i] = in[i];
         }
-		  //memcpy( &state->buf[r],in,inlen );
+		  //memcpy( state->buf+r,in,inlen );
         return 0;
     }
     for (i = 0; i < 128 - r; i++) {
