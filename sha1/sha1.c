@@ -231,12 +231,8 @@ const uint cic[] = {
 		A0 += blk(i);
 L:
 		A5 = A0 + rol(A4,5);// + cic[i/20];
-		//A0 += rol(A4,5);// + cic[i/20];
-
 		A3=rol(A3,30);
-		//ROL(30,A3);
 
-		//ar[5] = ar[0];
 		for ( int i2=0; i2<5; i2++ )
 			ar[i2] = ar[i2+1];
 	}
