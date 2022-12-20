@@ -117,7 +117,7 @@ void SHA1Transform(
 #endif
 
 
-	 int i = 0;
+	 uint i = 0;
 
 
 	 uint blkf(const uint ic){
