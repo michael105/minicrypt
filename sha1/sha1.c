@@ -112,16 +112,17 @@ void SHA1Transform(
     memcpy(block, buffer, 64);
 	
 #endif
-#if 0
-    uint32_t a, b, c, d, e;
-    /* Copy context->state[] to working vars */
-    a = state[0];
-    b = state[1];
-    c = state[2];
-    d = state[3];
-    e = state[4]; 
-#else
+#if 1
 	 uint32_t ar[5];
+#else
+	 union {
+	 uint32_t ar[5];
+	 ulong al[3];
+	 char ac[24];
+	 } u;
+#define ar u.ar
+#endif
+
 	 //memcpy(ar,state,5);
 	 for ( int i = 0; i<5; i++ )
 		 ar[i] = state[4-i];
@@ -130,39 +131,13 @@ void SHA1Transform(
 #define c ar[2]
 #define d ar[1]
 #define e ar[0]
-#endif
 
 
 	 uint i = 0;
 
 
-	
-	 void arol(){
-				ar[(i+3)%5]=rol(ar[(i+3)%5],30);
-				//ROL(30,ar[(i+3)%5]);
-	 }
-
-//#define blk(i) (block->l[i&15] = rol(block->l[(i+13)&15]^block->l[(i+8)&15] \
-    ^block->l[(i+2)&15]^block->l[i&15],1))
-
-	 uint blkf(const uint ic){
-			arol();
-			return( blk(i)+ic+rol(ar[(i+4)%5],5) );
-	 }
-
-	void r3f(){
-		ar[i%5] += (((ar[(i+3)%5]|ar[(i+2)%5])&ar[(i+1)%5])|(ar[(i+3)%5]&(ar[(i+2)%5]))) 
-			+ blkf(0x8f1bbcdc);
-	}
-
-	void r24f(const uint ic){
-			ar[i%5]+=(ar[(i+3)%5]^ar[(i+2)%5]^ar[(i+1)%5]) 
-				+ blkf(ic);
-	}
-
-
+#if 0
 	 for ( ; i<16; i++ ){
-		 R0(ar[(i+4)%5],ar[(i+3)%5],ar[(i+2)%5],ar[(i+1)%5],ar[i%5],i);
 	 }
 
 	 for ( ; i<20; i++ ){
@@ -180,6 +155,57 @@ void SHA1Transform(
 	 for ( ; i<80; i++ ){
 		 r24f(0xca62c1d6);
 	 }
+#else
+
+	 void arol(){
+				ar[(i+3)%5]=rol(ar[(i+3)%5],30);
+				//ROL(30,ar[(i+3)%5]);
+	 }
+
+	 uint blkf(){
+			return( blk(i) ); //+rol(ar[(i+4)%5],5) );
+	 }
+
+	 void r01f(){
+		 ar[i%5] += ( (ar[(i+3)%5]&(ar[(i+2)%5] ^ ar[(i+1)%5])) ^ ar[(i+1)%5] ) +0x5A827999;
+	 }
+
+	void r3f(){
+		ar[i%5] += (((ar[(i+3)%5]|ar[(i+2)%5])&ar[(i+1)%5])|(ar[(i+3)%5]&(ar[(i+2)%5]))) 
+			+ 0x8f1bbcdc;
+	}
+
+	void r24f(const uint ic){
+			ar[i%5]+=(ar[(i+3)%5]^ar[(i+2)%5]^ar[(i+1)%5]) 
+				+ ic;
+	}
+
+
+	for ( ; i<80; i++ ){
+		if ( i<20 ){
+			r01f();
+			//if ( i > 15 )
+			//	goto L;
+			if ( i<16){
+				ar[i%5] += blk0(i); //+ rol(ar[(i+4)%5],5);
+				goto L;
+			}
+		} else {
+			if ( i<40 )
+				r24f(0x6ed9eba1);
+			else 
+				if ( i < 60 )
+					r3f();	
+				else
+					r24f(0xca62c1d6);
+		}
+		ar[i%5] += blk(i);
+L:
+		ar[i%5] += rol(ar[(i+4)%5],5);
+		arol();
+	}
+
+#endif
 
 	 for ( int i = 0; i<5; i++ )
 		 state[i] += ar[4-i];
