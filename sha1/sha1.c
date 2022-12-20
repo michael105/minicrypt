@@ -83,6 +83,7 @@ A million repetitions of "a"
 #define R4(v,w,x,y,z,i) z+=(w^x^y)            +blkf(0xCA62C1D6);//arol();
 
 
+
 /* Hash a single 512-bit block. This is the core of the algorithm. */
 
 void SHA1Transform(
@@ -113,7 +114,7 @@ void SHA1Transform(
 	
 #endif
 #if 1
-	 uint32_t ar[5];
+	 uint32_t ar[6];
 #else
 	 union {
 	 uint32_t ar[5];
@@ -155,54 +156,81 @@ void SHA1Transform(
 	 for ( ; i<80; i++ ){
 		 r24f(0xca62c1d6);
 	 }
+
+	 // below
+const uint cic[] = {	
+0x5A827999,
+0x6ED9EBA1,
+0x8F1BBCDC,
+0xCA62C1D6 };
+
+
 #else
+#if 0
+#define A0 ar[i%5]
+#define A1 ar[(i+1)%5]
+#define A2 ar[(i+2)%5]
+#define A3 ar[(i+3)%5]
+#define A4 ar[(i+4)%5]
+#else
+#define A0 ar[0]
+#define A1 ar[1]
+#define A2 ar[2]
+#define A3 ar[3]
+#define A4 ar[4]
+#endif
 
 	 void arol(){
-				ar[(i+3)%5]=rol(ar[(i+3)%5],30);
-				//ROL(30,ar[(i+3)%5]);
+				A3=rol(A3,30);
+				//ROL(30,A3);
 	 }
 
 	 uint blkf(){
-			return( blk(i) ); //+rol(ar[(i+4)%5],5) );
+			return( blk(i) ); //+rol(A4,5) );
 	 }
 
 	 void r01f(){
-		 ar[i%5] += ( (ar[(i+3)%5]&(ar[(i+2)%5] ^ ar[(i+1)%5])) ^ ar[(i+1)%5] ) +0x5A827999;
+		 A0 += ( (A3 & (A2 ^ A1)) ^ A1 ) + 0x5A827999;
 	 }
 
 	void r3f(){
-		ar[i%5] += (((ar[(i+3)%5]|ar[(i+2)%5])&ar[(i+1)%5])|(ar[(i+3)%5]&(ar[(i+2)%5]))) 
+		A0 += (( (A3 | A2) & A1) | (A3 & (A2)) ) 
 			+ 0x8f1bbcdc;
 	}
 
 	void r24f(const uint ic){
-			ar[i%5]+=(ar[(i+3)%5]^ar[(i+2)%5]^ar[(i+1)%5]) 
+	//void r24f(){
+			A0 += ( A3 ^ A2 ^ A1 ) 
 				+ ic;
 	}
-
 
 	for ( ; i<80; i++ ){
 		if ( i<20 ){
 			r01f();
-			//if ( i > 15 )
-			//	goto L;
 			if ( i<16){
-				ar[i%5] += blk0(i); //+ rol(ar[(i+4)%5],5);
+				BSWAP(block->l[i]);
+				A0 += block->l[i];// += blk0(i); //+ rol(A4,5);
 				goto L;
 			}
 		} else {
 			if ( i<40 )
+				//r24f();
 				r24f(0x6ed9eba1);
 			else 
-				if ( i < 60 )
+				if ( i < 60 ){
 					r3f();	
-				else
+				} else
+					//r24f();
 					r24f(0xca62c1d6);
 		}
-		ar[i%5] += blk(i);
+		A0 += blk(i);
 L:
-		ar[i%5] += rol(ar[(i+4)%5],5);
+		A0 += rol(A4,5);// + cic[i/20];
 		arol();
+
+		ar[5] = ar[0];
+		for ( int i2=0; i2<5; i2++ )
+			ar[i2] = ar[i2+1];
 	}
 
 #endif
