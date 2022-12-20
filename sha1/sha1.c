@@ -164,6 +164,12 @@ const uint cic[] = {
 0x8F1BBCDC,
 0xCA62C1D6 };
 
+	 uint blkf(){
+			return( blk(i) ); //+rol(A4,5) );
+	 }
+
+
+
 
 #else
 #if 0
@@ -183,10 +189,6 @@ const uint cic[] = {
 	 void arol(){
 				A3=rol(A3,30);
 				//ROL(30,A3);
-	 }
-
-	 uint blkf(){
-			return( blk(i) ); //+rol(A4,5) );
 	 }
 
 	 void r01f(){
