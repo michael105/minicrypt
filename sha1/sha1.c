@@ -169,6 +169,12 @@ const uint cic[] = {
 	 }
 
 
+	 void arol(){
+				A3=rol(A3,30);
+				//ROL(30,A3);
+	 }
+
+
 
 
 #else
@@ -184,12 +190,9 @@ const uint cic[] = {
 #define A2 ar[2]
 #define A3 ar[3]
 #define A4 ar[4]
+#define A5 ar[5]
 #endif
 
-	 void arol(){
-				A3=rol(A3,30);
-				//ROL(30,A3);
-	 }
 
 	 void r01f(){
 		 A0 += ( (A3 & (A2 ^ A1)) ^ A1 ) + 0x5A827999;
@@ -227,10 +230,13 @@ const uint cic[] = {
 		}
 		A0 += blk(i);
 L:
-		A0 += rol(A4,5);// + cic[i/20];
-		arol();
+		A5 = A0 + rol(A4,5);// + cic[i/20];
+		//A0 += rol(A4,5);// + cic[i/20];
 
-		ar[5] = ar[0];
+		A3=rol(A3,30);
+		//ROL(30,A3);
+
+		//ar[5] = ar[0];
 		for ( int i2=0; i2<5; i2++ )
 			ar[i2] = ar[i2+1];
 	}
