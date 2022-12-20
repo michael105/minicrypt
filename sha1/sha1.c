@@ -26,6 +26,8 @@ A million repetitions of "a"
 
 #include "sha1.h"
 
+// sparew that..
+#define bzero(x,z) 
 
 #define rol(value, bits) (((value) << (bits)) | ((value) >> (32 - (bits))))
 //#define rol(v,b) ({ uint32_t i = v; ROL(b,i); i; })
@@ -49,39 +51,8 @@ A million repetitions of "a"
 #error "Endianness not defined!"
 #endif
 
-#define blk(i) (block->l[i&15] = rol(block->l[(i+13)&15]^block->l[(i+8)&15] \
-    ^block->l[(i+2)&15]^block->l[i&15],1))
-
 //#define blk(i) (rol(block->l[i&15] ^= block->l[(i+13)&15]^block->l[(i+8)&15] \
     ^block->l[(i+2)&15] ,1) )
-
-
-#ifdef R2
-#undef R2
-#endif
-
-#ifdef R4
-#undef R4
-#endif
-
-
-/* (R0+R1), R2, R3, R4 are the different operations used in SHA1 */
-
-//#define R1(v,w,x,y,z,i) z+=((w&(x^y))^y)      +blk(i)+0x5A827999+rol(v,5);w=rol(w,30);
-//#define R3(v,w,x,y,z,i) z+=(((w|x)&y)|(w&x))  +blk(i)+0x8F1BBCDC+rol(v,5);w=rol(w,30);
-
-//#define R2(v,w,x,y,z,i) z+=(w^x^y)            +blk(i)+0x6ED9EBA1+rol(v,5);w=rol(w,30);
-//#define R4(v,w,x,y,z,i) z+=(w^x^y)            +blk(i)+0xCA62C1D6+rol(v,5);w=rol(w,30);
-
-#define R0(v,w,x,y,z,i) z+=((w&(x^y))^y)     +blk0(i)+0x5A827999+rol(v,5);arol();
-
-#define R1(v,w,x,y,z,i) z+=((w&(x^y))^y)      +blkf(0x5A827999);//arol();
-
-#define R3(v,w,x,y,z,i) z+=(((w|x)&y)|(w&x))  +blkf(0x8F1BBCDC);//arol()
-
-#define R2(v,w,x,y,z,i) z+=(w^x^y)            +blkf(0x6ED9EBA1);//arol();
-#define R4(v,w,x,y,z,i) z+=(w^x^y)            +blkf(0xCA62C1D6);//arol();
-
 
 
 /* Hash a single 512-bit block. This is the core of the algorithm. */
@@ -107,32 +78,11 @@ void SHA1Transform(
      * pointer-to-const buffer to be cast into a pointer to non-const.
      * And the result is written through.  I threw a "const" in, hoping
      * this will cause a diagnostic.
-     */ /* I comment that out. That's . well. too much fun. misc */
-//    CHAR64LONG16 *block = (CHAR64LONG16 *) buffer;
-    CHAR64LONG16 block[1];      /* use array to appear as a pointer */
-    memcpy(block, buffer, 64);
-	
+     */ /* That's not been my idea. but spares 20 Bytes misc */
+    CHAR64LONG16 *block = (CHAR64LONG16 *) buffer;
+    //CHAR64LONG16 block[1];      /* use array to appear as a pointer */
+    //memcpy(block, buffer, 64);
 #endif
-#if 1
-	 uint32_t ar[6];
-#else
-	 union {
-	 uint32_t ar[5];
-	 ulong al[3];
-	 char ac[24];
-	 } u;
-#define ar u.ar
-#endif
-
-#define a ar[4]
-#define b ar[3]
-#define c ar[2]
-#define d ar[1]
-#define e ar[0]
-
-
-	 uint i = 0;
-
 
 #if 0
 	 for ( ; i<16; i++ ){
@@ -171,10 +121,9 @@ const uint cic[] = {
 				//ROL(30,A3);
 	 }
 
-
-
-
 #else
+
+
 #if 0
 #define A0 ar[i%5]
 #define A1 ar[(i+1)%5]
@@ -182,21 +131,35 @@ const uint cic[] = {
 #define A3 ar[(i+3)%5]
 #define A4 ar[(i+4)%5]
 #else
+#if 1
 #define A0 ar[0]
 #define A1 ar[1]
 #define A2 ar[2]
 #define A3 ar[3]
 #define A4 ar[4]
-#define A5 ar[5]
+#else
+#define A0 state[4]
+#define A1 state[3]
+#define A2 state[2]
+#define A3 state[1]
+#define A4 state[0]
 #endif
+#endif
+
+	 uint32_t ar[5];
+	 uint32_t t;
 
 	 //memcpy(ar,state,5);
 	 for ( int i = 0; i<5; i++ )
 		 ar[i] = state[4-i];
 
+	 void rr(uint x, const uint cx){
+		 A0 += (x^A1) + cx;
+	 }
 
 	 void r01f(){
-		 A0 += ( (A3 & (A2 ^ A1)) ^ A1 ) + 0x5A827999;
+		 rr (A3 & (A2 ^ A1), 0x5A827999 );
+		 //A0 += ( (A3 & (A2 ^ A1)) ^ A1 ) + 0x5A827999;
 	 }
 
 	void r3f(){
@@ -205,19 +168,14 @@ const uint cic[] = {
 	}
 
 	void r24f(const uint ic){
-	//void r24f(){
-			A0 += ( A3 ^ A2 ^ A1 ) 
-				+ ic;
+			rr( A3 ^ A2 , ic );
+//			A0 += ( A3 ^ A2 ^ A1 ) 
+//				+ ic;
 	}
 
-	for ( ; i<80; i++ ){
+	for ( int i = 0; i<80; i++ ){
 		if ( i<20 ){
 			r01f();
-			if ( i<16){
-				BSWAP(block->l[i]);
-				A0 += block->l[i];// += blk0(i); //+ rol(A4,5);
-				goto L;
-			}
 		} else {
 			if ( i<40 )
 				r24f(0x6ed9eba1);
@@ -227,13 +185,26 @@ const uint cic[] = {
 				} else
 					r24f(0xca62c1d6);
 		}
-		A0 += blk(i);
-L:
-		A5 = A0 + rol(A4,5);// + cic[i/20];
-		A3=rol(A3,30);
+#define blk(i) (block->l[i&15] = rol(block->l[(i+13)&15]^block->l[(i+8)&15] \
+    ^block->l[(i+2)&15]^block->l[i&15],1))
 
-		for ( int i2=0; i2<5; i2++ )
+		if ( i <16 ){
+				BSWAP(block->l[i]);
+				t= block->l[i];// += blk0(i); //+ rol(A4,5);
+		} else
+			t= blk(i);
+
+		A3=rol(A3,30);
+		t += A0 + rol(A4,5);// + cic[i/20];
+
+		for ( int i2=0; i2<4; i2++ )
 			ar[i2] = ar[i2+1];
+		ar[4] = t;
+	
+	/*	for ( int i2=1; i2<5; i2++ )
+			state[i2] = state[i2-1];
+		state[0] = t; */
+	
 	}
 
 #endif
@@ -241,12 +212,6 @@ L:
 	 //memcpy(ar,state,5);
 	for ( int i = 0; i<5; i++ )
 		 state[i] += ar[4-i];
-
-#undef a
-#undef b
-#undef c
-#undef d
-#undef e
 
 #ifdef SHA1HANDSOFF
     memset(block, '\0', sizeof(block));
@@ -289,7 +254,7 @@ void SHA1Update(
 	 // the same? misc
 	 //context->countl += len<<3 ;
     j = (j >> 3) & 63;
-    if ((j + len) > 63)
+    if ((j + len) & ~63) //> 63)
     {
         memcpy(&context->buffer[j], data, (i = 64 - j));
         SHA1Transform(context->state, context->buffer);
@@ -336,8 +301,11 @@ void SHA1Final(
             *--fcp = (unsigned char) t}
 #else
     for (i = 0; i < 8; i++)
+	 //for ( i=8; i--; )
     {
-        finalcount[i] = (unsigned char) ((context->count[(i >= 4 ? 0 : 1)] >> ((3 - (i & 3)) * 8)) & 255);      /* Endian independent */
+        finalcount[i] = (unsigned char) ((context->count[!(i&~3)] >> 
+					  ((3 - (i & 3)) << 3)) & 255);      /* Endian independent */
+        //finalcount[i] = (unsigned char) ((context->count[(i >= 4 ? 0 : 1)] >> ((3 - (i & 3)) << 3)) & 255);      /* Endian independent */
     }
 #endif
     c = 0200;
@@ -351,12 +319,10 @@ void SHA1Final(
     for (i = 0; i < 20; i++)
     {
         digest[i] = (unsigned char)
-            ((context->state[i >> 2] >> ((3 - (i & 3)) * 8)) & 255);
+            ((context->state[i >> 2] >> ((3 - (i & 3)) << 3)) & 255);
     }
     /* Wipe variables */
-    //memset(context, '\0', sizeof(*context));
     bzero(context, sizeof(*context));
-    //memset(&finalcount, '\0', sizeof(finalcount));
     bzero(&finalcount, sizeof(finalcount));
 }
 
