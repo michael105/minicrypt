@@ -124,9 +124,6 @@ void SHA1Transform(
 #define ar u.ar
 #endif
 
-	 //memcpy(ar,state,5);
-	 for ( int i = 0; i<5; i++ )
-		 ar[i] = state[4-i];
 #define a ar[4]
 #define b ar[3]
 #define c ar[2]
@@ -193,6 +190,10 @@ const uint cic[] = {
 #define A5 ar[5]
 #endif
 
+	 //memcpy(ar,state,5);
+	 for ( int i = 0; i<5; i++ )
+		 ar[i] = state[4-i];
+
 
 	 void r01f(){
 		 A0 += ( (A3 & (A2 ^ A1)) ^ A1 ) + 0x5A827999;
@@ -219,13 +220,11 @@ const uint cic[] = {
 			}
 		} else {
 			if ( i<40 )
-				//r24f();
 				r24f(0x6ed9eba1);
 			else 
 				if ( i < 60 ){
 					r3f();	
 				} else
-					//r24f();
 					r24f(0xca62c1d6);
 		}
 		A0 += blk(i);
@@ -239,7 +238,8 @@ L:
 
 #endif
 
-	 for ( int i = 0; i<5; i++ )
+	 //memcpy(ar,state,5);
+	for ( int i = 0; i<5; i++ )
 		 state[i] += ar[4-i];
 
 #undef a
