@@ -33,12 +33,12 @@ A million repetitions of "a"
 //#include "sha1.h"
 
 typedef struct{
-    uint32_t state[5];
-	 union {
-	    uint32_t count[2];
-		 ulong countl;
-	 };
+	 //union {
+	 uint32_t count[2];
+	//	 ulong countl;
+	 //};
     unsigned char buffer[64];
+    uint32_t state[5];
 } SHA1_CTX;
 
 

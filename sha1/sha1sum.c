@@ -91,7 +91,7 @@ int main(){
 	}
 
 	FINAL(&ctx,buf);
-
+#ifdef TOHEX
 	for ( int a = 0; a<HASHLEN; a++ ){
 		char c = buf[a];
 		for ( int b = 2; b--; ){
@@ -106,6 +106,10 @@ int main(){
 
 	obuf[HASHLEN*2] = '\n';
 	write(1,obuf,HASHLEN*2+1);
+#else
+	write(1,buf,HASHLEN);
+#endif
+
 	
 	exit(0);
 }
