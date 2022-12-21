@@ -1,6 +1,6 @@
 #if 0
 
-COMPILE memcpy8 nread bzero8 bzero memset memcpy
+COMPILE bzero memset memcpy read
 
 SHRINKELF
 #STRIPFLAG
@@ -58,6 +58,28 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define BUFL 4000
 
+static int nread(char *buf, int len){
+	char *b = buf;
+	char *e = buf+len;
+	int ret;
+
+	do {
+		//syscall3(ret,syscallnumber,fd,b,(e-b));
+		ret = read(0,b,(e-b));
+		if ( ret <= 0 ){
+			if ( ret == -EAGAIN || ret == -EINTR )
+				continue;
+			return( b-buf ); // rw bytes (if), or error code
+			//exit(ret);
+		}
+
+		b+=ret;
+
+	} while ( b < e );
+
+	return( len );
+}
+
 
 MAIN{
 
@@ -69,16 +91,38 @@ MAIN{
 	CTX ctx;
 	INIT(&ctx);
 
+ int xread(){
+	uchar *b = buf;
+	//uchar *e = buf+BUFL;
+	int ret;
 
-	while ( (r=nread(0,(char*)buf,BUFL)) ){
+	do {
+		//syscall3(ret,syscallnumber,fd,b,(e-b));
+		ret = read(0,b,((buf+BUFL)-b));
+		if ( ret <= 0 ){
+			if ( ret == -EAGAIN || ret == -EINTR )
+				continue;
+			return( b-buf ); // rw bytes (if), or error code
+			//exit(ret);
+		}
+
+		b+=ret;
+
+	} while ( b < buf + BUFL );
+
+	return( BUFL );
+}
+
+
+
+	//while ( (r=nread(0,(char*)buf,BUFL)) ){
+	//while ( (r=nread((char*)buf,BUFL)) ){
+	while ( (r=xread()) ){
 		UPDATE(&ctx,buf,r);
 	}
 
 	FINAL(&ctx,buf);
 
-	//write(1,obuf,64);
-	//const char *table = "0123456789abcdef";
-	
 	for ( int a = 0; a<HASHLEN; a++ ){
 		char c = buf[a];
 		for ( int b = 2; b--; ){
@@ -86,26 +130,11 @@ MAIN{
 			obuf[(a<<1) +b] = d>9 ? (d + 'a' - 0xa) : d + '0';
 			c >>=4;
 		}
-		//obuf[a<<1] = (c&0xf)>9 ? ((c&0xf) + 'a' - 0xa) : (c&0xf) + '0';
-
-		//buf[a<<1] = (((uchar)c>>4)+'0');
-		//if ( buf[a<<1] > '9' )
-		//	buf[a<<1] += 39 ;
-	//	buf[(a<<1)+1] = ((c&0xf) +'0');
-		//if ( buf[(a<<1)+1] > '9' )
-		//	buf[(a<<1)+1] += 39 ;
-
-
-
-	//	buf[a<<1]= table[ (uchar)c>>4 ]; // logic shift (without cast it's arithmetic (!!))
-	//	buf[(a<<1)+1]= table[ c&0xf ];
 	}
-/*	for ( int a = 0; a<HASHLEN*2; a++ )
-		if (  buf[a] > '9' )
-		buf[a] += 39; */
 
 	obuf[HASHLEN*2] = '\n';
 	write(1,obuf,HASHLEN*2+1);
 	
 	exit(0);
+
 }

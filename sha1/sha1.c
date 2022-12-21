@@ -26,8 +26,7 @@ A million repetitions of "a"
 
 //#include "sha1.h"
 
-typedef struct
-{
+typedef struct{
     uint32_t state[5];
 	 union {
 	    uint32_t count[2];
@@ -49,12 +48,12 @@ typedef struct
 #if BYTE_ORDER == LITTLE_ENDIAN
 
 //#define blk0(i) (block->l[i] = (rol(block->l[i],24)&0xFF00FF00) \
-    |(rol(block->l[i],8)&0x00FF00FF))
+//    |(rol(block->l[i],8)&0x00FF00FF))
 
 #define blk0(i) ({ BSWAP(block->l[i]); block->l[i]; })
 
 //#define blk0(i) (block->l[i] = rol((rol(block->l[i],16)&0x00FF00FF) \
-    |(block->l[i]&0xFF00FF00),8))
+//    |(block->l[i]&0xFF00FF00),8))
 //#define blk0(i) (block->l[i] = block->l[i]
 
 #elif BYTE_ORDER == BIG_ENDIAN
@@ -63,20 +62,15 @@ typedef struct
 #error "Endianness not defined!"
 #endif
 
-//#define blk(i) (rol(block->l[i&15] ^= block->l[(i+13)&15]^block->l[(i+8)&15] \
-    ^block->l[(i+2)&15] ,1) )
+//#define blk(i) (rol(block->l[i&15] ^= block->l[(i+13)&15]^block->l[(i+8)&15] 
+//    ^block->l[(i+2)&15] ,1) )
 
 
 /* Hash a single 512-bit block. This is the core of the algorithm. */
 
-static void SHA1Transform(
-    uint32_t state[5],
-    unsigned char buffer[64]
-)
-{
+static void SHA1Transform( uint32_t state[5], unsigned char buffer[64] ){
 
-    typedef union
-    {
+    typedef union{
         unsigned char c[64];
         uint32_t l[16];
     } CHAR64LONG16;
@@ -151,7 +145,6 @@ const uint cic[] = {
 #endif
 
 	 uint32_t ar[5];
-	 uint32_t t;
 
 	 //memcpy(ar,state,5);
 	 for ( int i = 0; i<5; i++ )
@@ -180,6 +173,12 @@ const uint cic[] = {
 	for ( int i = 0; i<80; i++ ){
 		if ( i<20 ){
 			r01f();
+
+		if ( i < 16 ){
+			BSWAP(block->l[i]);
+			goto L;
+		}
+
 		} else {
 			if ( i<40 )
 				r24f(0x6ed9eba1);
@@ -193,12 +192,9 @@ const uint cic[] = {
 #define BLK(i) (block->l[i&15] = rol(block->l[(i+13)&15]^block->l[(i+8)&15] \
     ^block->l[(i+2)&15]^block->l[i&15],1))
 
+		BLK(i);
 
-		if ( i <16 )
-			BSWAP(block->l[i]);
-		else
-			BLK(i);
-
+L:
 		A3=rol(A3,30);
 		uint t = A0; //block->l[i&15] + A0 + rol(A4,5);// + cic[i/20];
 
@@ -209,7 +205,6 @@ const uint cic[] = {
 	/*	for ( int i2=1; i2<5; i2++ )
 			state[i2] = state[i2-1];
 		state[0] = t; */
-	
 	}
 
 #endif
@@ -217,19 +212,12 @@ const uint cic[] = {
 	 //memcpy(ar,state,5);
 	for ( int i = 0; i<5; i++ )
 		 state[i] += ar[4-i];
-
-#ifdef SHA1HANDSOFF
-    memset(block, '\0', sizeof(block));
-#endif
 }
 
 
 /* SHA1Init - Initialize new context */
 
-static void SHA1Init(
-    SHA1_CTX * context
-)
-{
+static void SHA1Init( SHA1_CTX * context ){
     /* SHA1 initialization constants */
     context->state[0] = 0x67452301;
     context->state[1] = 0xEFCDAB89;
@@ -242,29 +230,18 @@ static void SHA1Init(
 
 /* Run your data through this. */
 
-static void SHA1Update(
-    SHA1_CTX * context,
-    const unsigned char *data,
-    uint32_t len
-)
-{
-    uint32_t i;
-
-    uint32_t j;
+static void SHA1Update( SHA1_CTX * context, const unsigned char *data, uint32_t len){
+    uint32_t i,j;
 
     j = context->count[0];
     if ((context->count[0] += len << 3) < j)
         context->count[1]++;
     context->count[1] += (len >> 29);
-	 // the same? misc
-	 //context->countl += len<<3 ;
     j = (j >> 3) & 63;
-    if ((j + len) & ~63) //> 63)
-    {
+    if ((j + len) & ~63){ //> 63)
         memcpy(&context->buffer[j], data, (i = 64 - j));
         SHA1Transform(context->state, context->buffer);
-        for (; i + 63 < len; i += 64)
-        {
+        for (; i + 63 < len; i += 64){
             SHA1Transform(context->state, &data[i]);
         }
         j = 0;
@@ -277,15 +254,9 @@ static void SHA1Update(
 
 /* Add padding and return the message digest. */
 
-static void SHA1Final(
-    unsigned char digest[20],
-    SHA1_CTX * context
-)
-{
+static void SHA1Final( unsigned char digest[20], SHA1_CTX * context ){
     unsigned i;
-
     unsigned char finalcount[8];
-
     unsigned char c;
 
 #if 0    /* untested "improvement" by DHR */
@@ -305,24 +276,20 @@ static void SHA1Final(
         for (j = 0; j < 4; t >>= 8, j++)
             *--fcp = (unsigned char) t}
 #else
-    for (i = 0; i < 8; i++)
-	 //for ( i=8; i--; )
-    {
+    for (i = 0; i < 8; i++){
         finalcount[i] = (unsigned char) ((context->count[!(i&~3)] >> 
-					  ((3 - (i & 3)) << 3)));      /* Endian independent */
+					  ((3 - (i & 3)) << 3)));    
         //finalcount[i] = (unsigned char) ((context->count[(i >= 4 ? 0 : 1)] >> ((3 - (i & 3)) << 3)) & 255);      /* Endian independent */
     }
 #endif
     c = 0200;
     SHA1Update(context, &c, 1);
-    while ((context->count[0] & 504) != 448)
-    {
+    while ((context->count[0] & 504) != 448){
         c = 0000;
         SHA1Update(context, &c, 1);
     }
     SHA1Update(context, finalcount, 8); /* Should cause a SHA1Transform() */
-    for (i = 0; i < 20; i++)
-    {
+    for (i = 0; i < 20; i++){
         digest[i] = (unsigned char)
             ((context->state[i >> 2] >> ((3 - (i & 3)) << 3)) );
     }
