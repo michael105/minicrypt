@@ -11,6 +11,12 @@ Test Vectors (from FIPS PUB 180-1)
 A million repetitions of "a"
   34AA973C D4C4DAA4 F61EEB2B DBAD2731 6534016F
 */
+/*
+ changes 2022 misc. Got this down from 7.5kB to 1kB.
+ bsd license, or whatever. It's just not my fault.
+ Did have some trouble with the branch predictor, or 
+ my processor might be faulty. Seems to work now, anyways.
+ */
 
 //#define LITTLE_ENDIAN /* This should be #define'd already, if true. */
 /* #define SHA1HANDSOFF * Copies data before messing with it. */
@@ -47,14 +53,14 @@ typedef struct{
 /* I got the idea of expanding during the round function from SSLeay */
 #if BYTE_ORDER == LITTLE_ENDIAN
 
-//#define blk0(i) (block->l[i] = (rol(block->l[i],24)&0xFF00FF00) 
-//    |(rol(block->l[i],8)&0x00FF00FF))
+//#define blk0(i) (block[i] = (rol(block[i],24)&0xFF00FF00) 
+//    |(rol(block[i],8)&0x00FF00FF))
 
-//#define blk0(i) ({ BSWAP(block->l[i]); block->l[i]; })
+//#define blk0(i) ({ BSWAP(block[i]); block[i]; })
 
 
 #elif BYTE_ORDER == BIG_ENDIAN
-#define blk0(i) block->l[i]
+#define blk0(i) block[i]
 #else
 #error "Endianness not defined!"
 #endif
@@ -62,15 +68,8 @@ typedef struct{
 
 /* Hash a single 512-bit block. This is the core of the algorithm. */
 static void SHA1Transform( uint32_t state[5], unsigned char buffer[64] ){
-
-    typedef union{
-        unsigned char c[64];
-        uint32_t l[16];
-    } CHAR64LONG16;
-
 #ifdef SHA1HANDSOFF
     CHAR64LONG16 block[1];      /* use array to appear as a pointer */
-
     memcpy(block, buffer, 64);
 #else
     /* The following had better never be used because it causes the
@@ -78,9 +77,8 @@ static void SHA1Transform( uint32_t state[5], unsigned char buffer[64] ){
      * And the result is written through.  I threw a "const" in, hoping
      * this will cause a diagnostic.
      */ /* That's not been my idea. but spares 20 Bytes misc */
-    CHAR64LONG16 *block = (CHAR64LONG16 *) buffer;
-    //CHAR64LONG16 block[1];      /* use array to appear as a pointer */
-    //memcpy(block, buffer, 64);
+    uint32_t *block = (uint32_t*)buffer;
+    //CHAR64LONG16 *block = (CHAR64LONG16 *) buffer;
 #endif
 
 #if 0
@@ -107,11 +105,19 @@ const uint cic[] = {
 #else
 
 #if 1
+#if 1
 #define A0 ar[0]
 #define A1 ar[1]
 #define A2 ar[2]
 #define A3 ar[3]
 #define A4 ar[4]
+#else
+#define A0 ar[4]
+#define A1 ar[3]
+#define A2 ar[2]
+#define A3 ar[1]
+#define A4 ar[0]
+#endif
 #else
 #define A0 state[4]
 #define A1 state[3]
@@ -149,10 +155,6 @@ const uint cic[] = {
 	for ( int i = 0; i<80; i++ ){
 		if ( i<20 ){
 			r01f();
-			if ( i < 16 ){
-				BSWAP(block->l[i]);
-				goto L;
-			}
 		} else { 
 			if ( i<40 )
 				r24f(0x6ed9eba1);
@@ -163,16 +165,19 @@ const uint cic[] = {
 					r24f(0xca62c1d6);
 		}
 
-		block->l[i&15] = rol( block->l[(i+13)&15] ^ block->l[(i+8)&15] 
-				^ block->l[(i+2)&15] ^ block->l[i&15] , 1 );
+		if ( i < 16 ){
+			BSWAP(block[i]);
+		} else {
+			block[i&15] = rol( block[(i+13)&15] ^ block[(i+8)&15] ^
+					             block[(i+2)&15] ^ block[i&15] , 1 );
+		}
 
-L:
 		A3=rol(A3,30);
-		uint t = A0; //block->l[i&15] + A0 + rol(A4,5);// + cic[i/20];
+		uint t = A0;
 
 		for ( int i2=0; i2<4; i2++ )
 			ar[i2] = ar[i2+1];
-		ar[4] = t + block->l[i&15] + rol(A3,5);
+		ar[4] = t + block[i&15] + rol(A3,5);
 
 		/*	for ( int i2=1; i2<5; i2++ )
 			state[i2] = state[i2-1];
@@ -181,7 +186,6 @@ L:
 
 #endif
 
-	 //memcpy(ar,state,5);
 	for ( int i = 0; i<5; i++ )
 		 state[i] += ar[4-i];
 }
