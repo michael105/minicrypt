@@ -1,6 +1,6 @@
 #if 0
 
-COMPILE bzero memset memcpy read
+COMPILE bzero memset memcpy read memmove
 
 SHRINKELF
 #STRIPFLAG
@@ -8,6 +8,7 @@ SHRINKELF
 
 SEGMENTS text
 NODEFAULTS
+#PICFLAG -fpic
 
 return
 #endif
@@ -49,40 +50,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "sha1.c"
 
-#define CTX SHA1_CTX
-#define INIT SHA1Init
-#define UPDATE SHA1Update
-#define FINAL(ctx,buf) SHA1Final(buf,ctx)
-
-#define HASHLEN 20
+#define CTX              SHA1_CTX
+#define INIT             SHA1Init
+#define UPDATE           SHA1Update
+#define FINAL(ctx,buf)   SHA1Final(buf,ctx)
+#define HASHLEN          20
 
 #define BUFL 4000
 
-static int nread(char *buf, int len){
-	char *b = buf;
-	char *e = buf+len;
-	int ret;
 
-	do {
-		//syscall3(ret,syscallnumber,fd,b,(e-b));
-		ret = read(0,b,(e-b));
-		if ( ret <= 0 ){
-			if ( ret == -EAGAIN || ret == -EINTR )
-				continue;
-			return( b-buf ); // rw bytes (if), or error code
-			//exit(ret);
-		}
-
-		b+=ret;
-
-	} while ( b < e );
-
-	return( len );
-}
-
-
-MAIN{
-
+int main(){
 	uchar buf[BUFL];
 	//uchar obuf[64];
 	uchar *obuf = buf+(HASHLEN);
@@ -91,28 +68,25 @@ MAIN{
 	CTX ctx;
 	INIT(&ctx);
 
- int xread(){
-	uchar *b = buf;
-	//uchar *e = buf+BUFL;
-	int ret;
+	int xread(){
+		uchar *b = buf;
+		//uchar *e = buf+BUFL;
+		int ret;
 
-	do {
-		//syscall3(ret,syscallnumber,fd,b,(e-b));
-		ret = read(0,b,((buf+BUFL)-b));
-		if ( ret <= 0 ){
+		do {
+			ret = read(0,b,((buf+BUFL)-b));
+			if ( ret == 0 || ret == BUFL )
+				return( b-buf ); // read bytes (if)
 			if ( ret == -EAGAIN || ret == -EINTR )
 				continue;
-			return( b-buf ); // rw bytes (if), or error code
-			//exit(ret);
-		}
+			if ( ret < 0 )
+				return(ret);
 
-		b+=ret;
+			b+=ret;
 
-	} while ( b < buf + BUFL );
-
-	return( BUFL );
-}
-
+		} while ( b < buf + BUFL );
+		return( BUFL );
+	}
 
 
 	//while ( (r=nread(0,(char*)buf,BUFL)) ){
@@ -126,8 +100,11 @@ MAIN{
 	for ( int a = 0; a<HASHLEN; a++ ){
 		char c = buf[a];
 		for ( int b = 2; b--; ){
-			char d = c&0xf;
-			obuf[(a<<1) +b] = d>9 ? (d + 'a' - 0xa) : d + '0';
+			char d = (c&0xf) + '0';
+			//obuf[(a<<1) +b] = d>'9' ? (d + 'a' - 0xa - '0') : d ;
+			if ( d>'9' )
+				d+= 'a'-0xa-'0';
+			obuf[(a<<1) +b] = d;
 			c >>=4;
 		}
 	}
@@ -136,5 +113,4 @@ MAIN{
 	write(1,obuf,HASHLEN*2+1);
 	
 	exit(0);
-
 }

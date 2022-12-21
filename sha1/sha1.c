@@ -50,7 +50,7 @@ typedef struct{
 //#define blk0(i) (block->l[i] = (rol(block->l[i],24)&0xFF00FF00) 
 //    |(rol(block->l[i],8)&0x00FF00FF))
 
-#define blk0(i) ({ BSWAP(block->l[i]); block->l[i]; })
+//#define blk0(i) ({ BSWAP(block->l[i]); block->l[i]; })
 
 
 #elif BYTE_ORDER == BIG_ENDIAN
