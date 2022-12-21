@@ -54,6 +54,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define FINAL(ctx,buf)   SHA1Final(buf,ctx)
 #define HASHLEN          20
 
+#define TOHEX
 #define BUFL 4000
 
 
