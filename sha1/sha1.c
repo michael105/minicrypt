@@ -37,7 +37,7 @@ typedef struct{
 
 
 
-// sparew that..
+// Don't overwrite stack vars
 #define bzero(x,z) 
 
 #define rol(value, bits) (((value) << (bits)) | ((value) >> (32 - (bits))))
@@ -47,14 +47,11 @@ typedef struct{
 /* I got the idea of expanding during the round function from SSLeay */
 #if BYTE_ORDER == LITTLE_ENDIAN
 
-//#define blk0(i) (block->l[i] = (rol(block->l[i],24)&0xFF00FF00) \
+//#define blk0(i) (block->l[i] = (rol(block->l[i],24)&0xFF00FF00) 
 //    |(rol(block->l[i],8)&0x00FF00FF))
 
 #define blk0(i) ({ BSWAP(block->l[i]); block->l[i]; })
 
-//#define blk0(i) (block->l[i] = rol((rol(block->l[i],16)&0x00FF00FF) \
-//    |(block->l[i]&0xFF00FF00),8))
-//#define blk0(i) (block->l[i] = block->l[i]
 
 #elif BYTE_ORDER == BIG_ENDIAN
 #define blk0(i) block->l[i]
@@ -62,12 +59,8 @@ typedef struct{
 #error "Endianness not defined!"
 #endif
 
-//#define blk(i) (rol(block->l[i&15] ^= block->l[(i+13)&15]^block->l[(i+8)&15] 
-//    ^block->l[(i+2)&15] ,1) )
-
 
 /* Hash a single 512-bit block. This is the core of the algorithm. */
-
 static void SHA1Transform( uint32_t state[5], unsigned char buffer[64] ){
 
     typedef union{
@@ -93,42 +86,25 @@ static void SHA1Transform( uint32_t state[5], unsigned char buffer[64] ){
 #if 0
 	 for ( ; i<16; i++ ){
 	 }
-
 	 for ( ; i<20; i++ ){
 		 R1(ar[(i+4)%5],ar[(i+3)%5],ar[(i+2)%5],ar[(i+1)%5],ar[i%5],i);
 	 }
-	 
     for ( ; i<40; i++ ){
 		 r24f(0x6ed9eba1);
 	 }
-
 	 for ( ; i<60; i++ ){
 		 r3f();
 	 }
-
 	 for ( ; i<80; i++ ){
 		 r24f(0xca62c1d6);
 	 }
-
 	 // below
 const uint cic[] = {	
 0x5A827999,
 0x6ED9EBA1,
 0x8F1BBCDC,
 0xCA62C1D6 };
-
-	 uint blkf(){
-			return( blk(i) ); //+rol(A4,5) );
-	 }
-
-
-	 void arol(){
-				A3=rol(A3,30);
-				//ROL(30,A3);
-	 }
-
 #else
-
 
 #if 1
 #define A0 ar[0]
@@ -165,34 +141,30 @@ const uint cic[] = {
 	}
 
 	void r24f(const uint ic){
-			rr( A3 ^ A2 , ic );
+		rr( A3 ^ A2 , ic );
 //			A0 += ( A3 ^ A2 ^ A1 ) 
-//				+ ic;
+//			+ ic;
 	}
 
 	for ( int i = 0; i<80; i++ ){
 		if ( i<20 ){
 			r01f();
-
-		if ( i < 16 ){
-			BSWAP(block->l[i]);
-			goto L;
-		}
-
-		} else {
+			if ( i < 16 ){
+				BSWAP(block->l[i]);
+				goto L;
+			}
+		} else { 
 			if ( i<40 )
 				r24f(0x6ed9eba1);
 			else 
-				if ( i < 60 ){
+				if ( i < 60 )
 					r3f();	
-				} else
+				 else 
 					r24f(0xca62c1d6);
 		}
 
-#define BLK(i) (block->l[i&15] = rol(block->l[(i+13)&15]^block->l[(i+8)&15] \
-    ^block->l[(i+2)&15]^block->l[i&15],1))
-
-		BLK(i);
+		block->l[i&15] = rol( block->l[(i+13)&15] ^ block->l[(i+8)&15] 
+				^ block->l[(i+2)&15] ^ block->l[i&15] , 1 );
 
 L:
 		A3=rol(A3,30);
@@ -201,10 +173,10 @@ L:
 		for ( int i2=0; i2<4; i2++ )
 			ar[i2] = ar[i2+1];
 		ar[4] = t + block->l[i&15] + rol(A3,5);
-	
-	/*	for ( int i2=1; i2<5; i2++ )
+
+		/*	for ( int i2=1; i2<5; i2++ )
 			state[i2] = state[i2-1];
-		state[0] = t; */
+			state[0] = t; */
 	}
 
 #endif
@@ -230,7 +202,7 @@ static void SHA1Init( SHA1_CTX * context ){
 
 /* Run your data through this. */
 
-static void SHA1Update( SHA1_CTX * context, const unsigned char *data, uint32_t len){
+static void SHA1Update( SHA1_CTX * context, unsigned char *data, uint32_t len){
     uint32_t i,j;
 
     j = context->count[0];
