@@ -159,7 +159,7 @@ const uint cic[] = {
 			else 
 				if ( i < 60 )
 					r3f();	
-				 else 
+				else 
 					r24f(0xca62c1d6);
 		}
 

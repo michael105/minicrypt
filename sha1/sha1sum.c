@@ -46,8 +46,6 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-
-
 #include "sha1.c"
 
 #define CTX              SHA1_CTX
@@ -88,9 +86,6 @@ int main(){
 		return( BUFL );
 	}
 
-
-	//while ( (r=nread(0,(char*)buf,BUFL)) ){
-	//while ( (r=nread((char*)buf,BUFL)) ){
 	while ( (r=xread()) ){
 		UPDATE(&ctx,buf,r);
 	}
