@@ -62,7 +62,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 MAIN{
 
 	uchar buf[BUFL];
-	uchar obuf[64];
+	//uchar obuf[64];
+	uchar *obuf = buf+(HASHLEN);
 	int r;
 
 	CTX ctx;
@@ -73,34 +74,38 @@ MAIN{
 		UPDATE(&ctx,buf,r);
 	}
 
-	FINAL(&ctx,obuf);
+	FINAL(&ctx,buf);
 
 	//write(1,obuf,64);
+	//const char *table = "0123456789abcdef";
 	
 	for ( int a = 0; a<HASHLEN; a++ ){
-		char c = obuf[a];
-		buf[2*a +1] = (c&0xf)>9 ? ((c&0xf) + 'a' - 0xa) : (c&0xf) + '0';
-		c >>=4;
-		buf[2*a] = (c&0xf)>9 ? ((c&0xf) + 'a' - 0xa) : (c&0xf) + '0';
-	}
-	buf[HASHLEN*2] = '\n';
-	write(1,buf,HASHLEN*2+1);
-	
-	/*
-	ulong *lb = (ulong*)buf;
-	for ( ulong *l = obuf; l < obuf + 64; l++){
-		for ( int a = 0; a<16; a++ ){
-			*lb = ((*lb)<<4) | ( ((*l)&0xF)>9 ? (((*l)&0xf) + 'a' - 0xa) : ((*l)&0xf) + '0');
-			(*l) >>=4;
+		char c = buf[a];
+		for ( int b = 2; b--; ){
+			char d = c&0xf;
+			obuf[(a<<1) +b] = d>9 ? (d + 'a' - 0xa) : d + '0';
+			c >>=4;
 		}
-		lb += 2;
-		
+		//obuf[a<<1] = (c&0xf)>9 ? ((c&0xf) + 'a' - 0xa) : (c&0xf) + '0';
+
+		//buf[a<<1] = (((uchar)c>>4)+'0');
+		//if ( buf[a<<1] > '9' )
+		//	buf[a<<1] += 39 ;
+	//	buf[(a<<1)+1] = ((c&0xf) +'0');
+		//if ( buf[(a<<1)+1] > '9' )
+		//	buf[(a<<1)+1] += 39 ;
+
+
+
+	//	buf[a<<1]= table[ (uchar)c>>4 ]; // logic shift (without cast it's arithmetic (!!))
+	//	buf[(a<<1)+1]= table[ c&0xf ];
 	}
-		buf[128] = '\n';
-	write(1,buf,129);
-	*/
+/*	for ( int a = 0; a<HASHLEN*2; a++ )
+		if (  buf[a] > '9' )
+		buf[a] += 39; */
 
-		//printf("%2x",(char*)obuf[a]);
-
+	obuf[HASHLEN*2] = '\n';
+	write(1,obuf,HASHLEN*2+1);
+	
 	exit(0);
 }

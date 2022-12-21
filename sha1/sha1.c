@@ -24,7 +24,19 @@ A million repetitions of "a"
 #include <stdint.h>
 #endif
 
-#include "sha1.h"
+//#include "sha1.h"
+
+typedef struct
+{
+    uint32_t state[5];
+	 union {
+	    uint32_t count[2];
+		 ulong countl;
+	 };
+    unsigned char buffer[64];
+} SHA1_CTX;
+
+
 
 // sparew that..
 #define bzero(x,z) 
@@ -57,9 +69,9 @@ A million repetitions of "a"
 
 /* Hash a single 512-bit block. This is the core of the algorithm. */
 
-void SHA1Transform(
+static void SHA1Transform(
     uint32_t state[5],
-    const unsigned char buffer[64]
+    unsigned char buffer[64]
 )
 {
 
@@ -124,13 +136,6 @@ const uint cic[] = {
 #else
 
 
-#if 0
-#define A0 ar[i%5]
-#define A1 ar[(i+1)%5]
-#define A2 ar[(i+2)%5]
-#define A3 ar[(i+3)%5]
-#define A4 ar[(i+4)%5]
-#else
 #if 1
 #define A0 ar[0]
 #define A1 ar[1]
@@ -143,7 +148,6 @@ const uint cic[] = {
 #define A2 state[2]
 #define A3 state[1]
 #define A4 state[0]
-#endif
 #endif
 
 	 uint32_t ar[5];
@@ -185,21 +189,22 @@ const uint cic[] = {
 				} else
 					r24f(0xca62c1d6);
 		}
-#define blk(i) (block->l[i&15] = rol(block->l[(i+13)&15]^block->l[(i+8)&15] \
+
+#define BLK(i) (block->l[i&15] = rol(block->l[(i+13)&15]^block->l[(i+8)&15] \
     ^block->l[(i+2)&15]^block->l[i&15],1))
 
-		if ( i <16 ){
-				BSWAP(block->l[i]);
-				t= block->l[i];// += blk0(i); //+ rol(A4,5);
-		} else
-			t= blk(i);
+
+		if ( i <16 )
+			BSWAP(block->l[i]);
+		else
+			BLK(i);
 
 		A3=rol(A3,30);
-		t += A0 + rol(A4,5);// + cic[i/20];
+		uint t = A0; //block->l[i&15] + A0 + rol(A4,5);// + cic[i/20];
 
 		for ( int i2=0; i2<4; i2++ )
 			ar[i2] = ar[i2+1];
-		ar[4] = t;
+		ar[4] = t + block->l[i&15] + rol(A3,5);
 	
 	/*	for ( int i2=1; i2<5; i2++ )
 			state[i2] = state[i2-1];
@@ -221,7 +226,7 @@ const uint cic[] = {
 
 /* SHA1Init - Initialize new context */
 
-void SHA1Init(
+static void SHA1Init(
     SHA1_CTX * context
 )
 {
@@ -237,7 +242,7 @@ void SHA1Init(
 
 /* Run your data through this. */
 
-void SHA1Update(
+static void SHA1Update(
     SHA1_CTX * context,
     const unsigned char *data,
     uint32_t len
@@ -272,7 +277,7 @@ void SHA1Update(
 
 /* Add padding and return the message digest. */
 
-void SHA1Final(
+static void SHA1Final(
     unsigned char digest[20],
     SHA1_CTX * context
 )
@@ -304,7 +309,7 @@ void SHA1Final(
 	 //for ( i=8; i--; )
     {
         finalcount[i] = (unsigned char) ((context->count[!(i&~3)] >> 
-					  ((3 - (i & 3)) << 3)) & 255);      /* Endian independent */
+					  ((3 - (i & 3)) << 3)));      /* Endian independent */
         //finalcount[i] = (unsigned char) ((context->count[(i >= 4 ? 0 : 1)] >> ((3 - (i & 3)) << 3)) & 255);      /* Endian independent */
     }
 #endif
@@ -319,14 +324,15 @@ void SHA1Final(
     for (i = 0; i < 20; i++)
     {
         digest[i] = (unsigned char)
-            ((context->state[i >> 2] >> ((3 - (i & 3)) << 3)) & 255);
+            ((context->state[i >> 2] >> ((3 - (i & 3)) << 3)) );
     }
     /* Wipe variables */
     bzero(context, sizeof(*context));
     bzero(&finalcount, sizeof(finalcount));
 }
 
-void SHA1(
+/*
+static void SHA1(
     char *hash_out,
     const char *str,
     int len)
@@ -335,8 +341,8 @@ void SHA1(
     unsigned int ii;
 
     SHA1Init(&ctx);
-    for (ii=0; ii<len; ii+=1)
+    for (ii=0; ii<len; ii++)
         SHA1Update(&ctx, (const unsigned char*)str + ii, 1);
     SHA1Final((unsigned char *)hash_out, &ctx);
-}
+} */
 
