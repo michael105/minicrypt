@@ -36,7 +36,7 @@ A million repetitions of "a"
 //#define LITTLE_ENDIAN /* This should be #define'd already, if true. */
 
 #define SHA1HANDSOFF  /* Copies data before messing with it. */
-#define SHA1_ERASE // overwrite data at the stack
+//#define SHA1_ERASE // overwrite data at the stack
 
 
 
@@ -57,10 +57,6 @@ typedef struct{
     uint32_t state[5];
 } SHA1_CTX;
 
-
-
-// Don't overwrite stack vars
-#define bzero(x,z) 
 
 #define rol(value, bits) (((value) << (bits)) | ((value) >> (32 - (bits))))
 //#define rol(v,b) ({ uint32_t i = v; ROL(b,i); i; })
