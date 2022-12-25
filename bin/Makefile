@@ -6,7 +6,7 @@ README.md: blake3sums.txt
 	#echo '```'>> README.md
 	perl Makeindex.pl >> README.md
 	echo '```'>> README.md
-	echo -e "\n-----------\n blake3sum\n\n" >> README.md
+	echo -e "\n-----------\n checksums\n\n" >> README.md
 	sh blake3sums.sh >> README.md
 
 

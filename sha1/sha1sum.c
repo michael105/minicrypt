@@ -87,7 +87,7 @@ int main(){
 		return( BUFL );
 	}
 
-	while ( (r=xread()) ){
+	while ( (r=xread())>0 ){
 		UPDATE(&ctx,buf,r);
 	}
 
