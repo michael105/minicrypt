@@ -98,31 +98,6 @@ static void SHA1Transform( uint32_t state[5], unsigned char buffer[64] ){
 
 	for ( uint32_t *pi = block; pi<block+16; pi++ )
 		BSWAP(*pi);
-
-#if 0
-	 for ( ; i<16; i++ ){
-	 }
-	 for ( ; i<20; i++ ){
-		 R1(ar[(i+4)%5],ar[(i+3)%5],ar[(i+2)%5],ar[(i+1)%5],ar[i%5],i);
-	 }
-    for ( ; i<40; i++ ){
-		 r24f(0x6ed9eba1);
-	 }
-	 for ( ; i<60; i++ ){
-		 r3f();
-	 }
-	 for ( ; i<80; i++ ){
-		 r24f(0xca62c1d6);
-	 }
-	 // below
-const uint cic[] = {	
-0x5A827999,
-0x6ED9EBA1,
-0x8F1BBCDC,
-0xCA62C1D6 };
-#else
-
-#if 1
 #if 1
 #define A0 ar[0]
 #define A1 ar[1]
@@ -135,13 +110,6 @@ const uint cic[] = {
 #define A2 ar[2]
 #define A3 ar[1]
 #define A4 ar[0]
-#endif
-#else
-#define A0 state[4]
-#define A1 state[3]
-#define A2 state[2]
-#define A3 state[1]
-#define A4 state[0]
 #endif
 
 	 uint32_t ar[5];
@@ -190,8 +158,6 @@ const uint cic[] = {
 		ar[4] = t;
 
 	}
-
-#endif
 
 	for ( int i = 0; i<5; i++ )
 		 state[i] += ar[4-i];
