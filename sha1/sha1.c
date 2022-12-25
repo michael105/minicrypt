@@ -1,7 +1,7 @@
 /*
-SHA-1 in C
-By Steve Reid <steve@edmweb.com>
-100% Public Domain
+ 
+original sha1 code: Steve Reid <steve@edmweb.com>
+		100% Public Domain
 
 Test Vectors (from FIPS PUB 180-1)
 "abc"
@@ -13,24 +13,37 @@ A million repetitions of "a"
 */
 /*
  changes 2022 misc. Got this down from 7.5kB to 1kB.
- bsd license, or whatever. It's just not my fault.
- Did have some trouble with the branch predictor, or 
- my processor might be faulty. Seems to work now, anyways.
+ bsd license 3clause. It's just not my fault.
+
+ If SHA1HANDSOFF is not defined, the content of the buffer to hash is changed (!)
+ In favour of codesize this now works only on little endian (amd64, intel x64) machines.
+ if you'd like to have the stack variables overwritten, 
+ undefine the bzero macro below.
+ Albite I'd suggest, instead of trying (! this is not guaranteed to work) to erase
+ the stackvariables, better hash another random buffer.
+
+ The original try to erase the stackvariables might be unsuccessfull in each case.
+ In most circumstances the compiler is smart enough to see, the value 0 is written,
+ but not read anymore. so. Why write it there.. ?
+ Inline assembly might be saver.
+ But I'm not sure, what processor internal predictors are going to . predict.
+ The code below might have the advantage to stay within the cpu,
+ it's squeezed enough, to work only with registers.
+ No memory access needed, besides reading the buffer to hash.
+
+ 
+
  */
 
 //#define LITTLE_ENDIAN /* This should be #define'd already, if true. */
 /* #define SHA1HANDSOFF * Copies data before messing with it. */
 #ifndef MLIB
-#define SHA1HANDSOFF
-
 #include <stdio.h>
 #include <string.h>
-
-/* for uint32_t */
 #include <stdint.h>
 #endif
 
-//#include "sha1.h"
+//#define SHA1HANDSOFF
 
 typedef struct{
 	 //union {
@@ -69,17 +82,22 @@ typedef struct{
 /* Hash a single 512-bit block. This is the core of the algorithm. */
 static void SHA1Transform( uint32_t state[5], unsigned char buffer[64] ){
 #ifdef SHA1HANDSOFF
-    CHAR64LONG16 block[1];      /* use array to appear as a pointer */
+    uint32_t block[16];
     memcpy(block, buffer, 64);
 #else
     /* The following had better never be used because it causes the
      * pointer-to-const buffer to be cast into a pointer to non-const.
      * And the result is written through.  I threw a "const" in, hoping
      * this will cause a diagnostic.
-     */ /* That's not been my idea. but spares 20 Bytes misc */
+     */ /* That's not been my idea. but spares 20 Bytes. I changed the declaration,
+			  removed the const, added the warning. misc */
     uint32_t *block = (uint32_t*)buffer;
-    //CHAR64LONG16 *block = (CHAR64LONG16 *) buffer;
+//#warning buffer will be changed (SHA1Update(buffer) -> SHA1Transform(buffer) ) 
+//	 define SHA1HANDSOFF if necessary
 #endif
+
+	for ( uint32_t *pi = block; pi<block+16; pi++ )
+		BSWAP(*pi);
 
 #if 0
 	 for ( ; i<16; i++ ){
@@ -128,60 +146,49 @@ const uint cic[] = {
 
 	 uint32_t ar[5];
 
-	 //memcpy(ar,state,5);
 	 for ( int i = 0; i<5; i++ )
 		 ar[i] = state[4-i];
+
 
 	 void rr(uint x, const uint cx){
 		 A0 += (x^A1) + cx;
 	 }
-
 	 void r01f(){
 		 rr (A3 & (A2 ^ A1), 0x5A827999 );
-		 //A0 += ( (A3 & (A2 ^ A1)) ^ A1 ) + 0x5A827999;
+	 }
+	 void r24f(const uint ic){
+		 rr( A3 ^ A2 , ic );
+	 }
+	 void r3f(){
+		 A0 += (( (A3 | A2) & A1) | (A3 & A2) ) 
+			 + 0x8f1bbcdc;
 	 }
 
-	void r3f(){
-		A0 += (( (A3 | A2) & A1) | (A3 & (A2)) ) 
-			+ 0x8f1bbcdc;
-	}
-
-	void r24f(const uint ic){
-		rr( A3 ^ A2 , ic );
-//			A0 += ( A3 ^ A2 ^ A1 ) 
-//			+ ic;
-	}
 
 	for ( int i = 0; i<80; i++ ){
-		if ( i<20 ){
-			r01f();
-		} else { 
-			if ( i<40 )
-				r24f(0x6ed9eba1);
-			else 
-				if ( i < 60 )
-					r3f();	
-				else 
-					r24f(0xca62c1d6);
-		}
 
-		if ( i < 16 ){
-			BSWAP(block[i]);
-		} else {
-			block[i&15] = rol( block[(i+13)&15] ^ block[(i+8)&15] ^
-					             block[(i+2)&15] ^ block[i&15] , 1 );
-		}
+		if ( i<20 )
+			r01f();
+		else if ( i<40 )
+			r24f(0x6ed9eba1);
+		else if ( i < 60 )
+			r3f();	
+		else 
+			r24f(0xca62c1d6);
+
+		if ( i > 15 )
+			block[i&15] = rol( block[(i+13)&15] ^ block[(i+8)&15] ^ block[(i+2)&15] ^ block[i&15] , 1 );
 
 		A3=rol(A3,30);
-		uint t = A0;
-
+		
+		A0 += block[i&15] + rol(A4,5);
+		
+		// rotate registers
+		uint32_t t = ar[0];
 		for ( int i2=0; i2<4; i2++ )
 			ar[i2] = ar[i2+1];
-		ar[4] = t + block[i&15] + rol(A3,5);
+		ar[4] = t;
 
-		/*	for ( int i2=1; i2<5; i2++ )
-			state[i2] = state[i2-1];
-			state[0] = t; */
 	}
 
 #endif
@@ -274,18 +281,50 @@ static void SHA1Final( unsigned char digest[20], SHA1_CTX * context ){
     bzero(&finalcount, sizeof(finalcount));
 }
 
-/*
-static void SHA1(
-    char *hash_out,
-    const char *str,
-    int len)
-{
+
+static void SHA1( char *hash_out, const char *str, int len ){
     SHA1_CTX ctx;
     unsigned int ii;
 
     SHA1Init(&ctx);
     for (ii=0; ii<len; ii++)
-        SHA1Update(&ctx, (const unsigned char*)str + ii, 1);
+        SHA1Update(&ctx, (unsigned char*)str + ii, 1);
     SHA1Final((unsigned char *)hash_out, &ctx);
-} */
+} 
+
+#if 0
+
+// hmac.
+static void hmac_sha1(unsigned char *key, int key_len,
+    unsigned char *text, int text_len, unsigned char *hmac) {
+    SHA_State context;
+    unsigned char k_ipad[KEY_IOPAD_SIZE];    /* inner padding - key XORd with ipad  */
+    unsigned char k_opad[KEY_IOPAD_SIZE];    /* outer padding - key XORd with opad */
+    int i;
+
+    /* start out by storing key in pads */
+    memset(k_ipad, 0, sizeof(k_ipad));
+    memset(k_opad, 0, sizeof(k_opad));
+    memcpy(k_ipad, key, key_len);
+    memcpy(k_opad, key, key_len);
+
+    /* XOR key with ipad and opad values */
+    for (i = 0; i < KEY_IOPAD_SIZE; i++) {
+        k_ipad[i] ^= 0x36;
+        k_opad[i] ^= 0x5c;
+    }
+
+    // perform inner SHA
+    SHA_Init(&context);                    /* init context for 1st pass */
+    SHA_Bytes(&context, k_ipad, KEY_IOPAD_SIZE);      /* start with inner pad */
+    SHA_Bytes(&context, text, text_len); /* then text of datagram */
+    SHA_Final(&context, hmac);             /* finish up 1st pass */
+
+    // perform outer SHA
+    SHA_Init(&context);                   /* init context for 2nd pass */
+    SHA_Bytes(&context, k_opad, KEY_IOPAD_SIZE);     /* start with outer pad */
+    SHA_Bytes(&context, hmac, SHA1_DIGEST_SIZE);     /* then results of 1st hash */
+    SHA_Final(&context, hmac);          /* finish up 2nd pass */
+}
+#endif
 
